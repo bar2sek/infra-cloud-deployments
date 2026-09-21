@@ -8,8 +8,17 @@ terraform {
     }
   }
 
+  # Partial backend configuration.
+  #
+  # `bucket` is deliberately omitted: the state bucket name embeds the AWS
+  # account ID, and backend blocks cannot interpolate variables (the backend
+  # initializes before any variable is evaluated). It is injected at init time:
+  #
+  #   CI:    terraform init -backend-config="bucket=${{ vars.AWS_TF_STATE_BUCKET }}"
+  #   Local: terraform init -backend-config=backend.hcl   # gitignored, see backend.hcl.example
+  #
+  # Do NOT hardcode the bucket name here — this repository is public-by-default.
   backend "s3" {
-    bucket         = "s3-aws-tfstate-prod-use2-REDACTED_ACCOUNT_ID"
     key            = "aws-workloads/terraform.tfstate"
     region         = "us-east-2"
     dynamodb_table = "ddb-aws-tflocks-prod-use2-001"

@@ -49,8 +49,10 @@ jobs:
       - name: Check Terraform Formatting
         run: terraform fmt -check
 
+      # The state bucket name embeds the AWS account ID, so it is a masked secret
+      # rather than a variable — `run:` commands are echoed verbatim into logs.
       - name: Initialize Terraform (S3 Remote Backend with DynamoDB Locks)
-        run: terraform init
+        run: terraform init -backend-config="bucket=${{ secrets.AWS_TF_STATE_BUCKET }}"
 
       - name: Validate Terraform Manifests
         run: terraform validate
@@ -87,8 +89,10 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           audience: sts.amazonaws.com
 
+      # The state bucket name embeds the AWS account ID, so it is a masked secret
+      # rather than a variable — `run:` commands are echoed verbatim into logs.
       - name: Initialize Terraform (S3 Remote Backend with DynamoDB Locks)
-        run: terraform init
+        run: terraform init -backend-config="bucket=${{ secrets.AWS_TF_STATE_BUCKET }}"
 
       - name: Apply Infrastructure Changes
         run: terraform apply -auto-approve

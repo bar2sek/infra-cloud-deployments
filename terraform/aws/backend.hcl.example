@@ -1,0 +1,18 @@
+# ==============================================================================
+# Local Partial Backend Configuration (EXAMPLE)
+# ==============================================================================
+#
+# The S3 state bucket name embeds the AWS account ID, so it is NOT committed to
+# this repository. Copy this file to `backend.hcl` (gitignored) and fill in the
+# real bucket name before running Terraform locally:
+#
+#   cp backend.hcl.example backend.hcl
+#   terraform init -backend-config=backend.hcl
+#
+# In CI the same value is supplied from the `AWS_TF_STATE_BUCKET` GitHub
+# Actions repository variable instead of this file.
+#
+# Naming pattern: s3-aws-tfstate-<env>-<region-code>-<account-id>
+# ==============================================================================
+
+bucket = "s3-aws-tfstate-prod-use2-REPLACE_WITH_ACCOUNT_ID"

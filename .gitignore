@@ -17,6 +17,10 @@
 *.tfvars.json
 !*.tfvars.example
 
+# Partial backend configuration (embeds AWS account ID in the state bucket name)
+backend.hcl
+!backend.hcl.example
+
 # Crash logs and CLI overrides
 crash.log
 crash.*.log
