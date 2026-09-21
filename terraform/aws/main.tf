@@ -67,5 +67,5 @@ resource "aws_iam_role" "eks_connector" {
 
 resource "aws_iam_role_policy_attachment" "eks_connector_policy" {
   role       = aws_iam_role.eks_connector.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSConnectorServiceRolePolicy"
+  policy_arn = "arn:aws:iam::aws:policy/aws-service-role/AmazonEKSConnectorServiceRolePolicy"
 }
