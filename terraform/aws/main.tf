@@ -65,7 +65,37 @@ resource "aws_iam_role" "eks_connector" {
   }
 }
 
+# Customer-Managed Policy for EKS Connector Agent (per official AWS EKS Connector specifications)
+resource "aws_iam_policy" "eks_connector_agent" {
+  name        = "policy-aws-eks-connector-agent-prod-001"
+  description = "Allows the Amazon EKS Connector agent to connect external Kubernetes clusters to AWS"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SsmControlChannel"
+        Effect = "Allow"
+        Action = [
+          "ssmmessages:CreateControlChannel"
+        ]
+        Resource = "arn:aws:eks:*:*:cluster/*"
+      },
+      {
+        Sid    = "SsmDataplaneOperations"
+        Effect = "Allow"
+        Action = [
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenDataChannel",
+          "ssmmessages:OpenControlChannel"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "eks_connector_policy" {
   role       = aws_iam_role.eks_connector.name
-  policy_arn = "arn:aws:iam::aws:policy/aws-service-role/AmazonEKSConnectorServiceRolePolicy"
+  policy_arn = aws_iam_policy.eks_connector_agent.arn
 }
