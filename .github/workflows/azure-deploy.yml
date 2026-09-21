@@ -1,0 +1,106 @@
+name: "Azure Cloud Deployments CI/CD"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "terraform/azure/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/azure/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # 1. Validation & Speculative Plan (Runs on Pull Requests)
+  # ----------------------------------------------------------------------------
+  plan:
+    name: "Terraform Plan (PR Validation)"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/azure
+    env:
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Azure Login via OIDC Workload Identity Federation
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Check Terraform Formatting
+        run: terraform fmt -check
+
+      - name: Initialize Terraform (Remote Backend with Azure AD Auth)
+        run: terraform init
+
+      - name: Validate Terraform Manifests
+        run: terraform validate
+
+      - name: Generate Speculative Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+
+  # ----------------------------------------------------------------------------
+  # 2. Automated Apply (Runs on Merge to Main within 'production' Environment)
+  # ----------------------------------------------------------------------------
+  apply:
+    name: "Terraform Apply (Production)"
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform/azure
+    env:
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Azure Login via OIDC Workload Identity Federation
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Initialize Terraform (Remote Backend with Azure AD Auth)
+        run: terraform init
+
+      - name: Apply Infrastructure Changes
+        run: terraform apply -auto-approve

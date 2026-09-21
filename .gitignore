@@ -1,0 +1,34 @@
+# ==============================================================================
+# Git Ignore - Infrastructure Cloud Deployments
+# ==============================================================================
+
+# Local .terraform directories and caches
+**/.terraform/*
+.terraform/
+
+# Terraform state files (All state is stored remotely in Azure Blob Storage)
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+
+# Sensitive credentials, API keys, and variable values
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Crash logs and CLI overrides
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI Configuration Files
+.terraformrc
+terraform.rc
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
