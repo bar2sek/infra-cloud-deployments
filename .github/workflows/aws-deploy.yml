@@ -1,0 +1,94 @@
+name: "AWS Cloud Deployments CI/CD"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "terraform/aws/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/aws/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # 1. Validation & Speculative Plan (Runs on Pull Requests)
+  # ----------------------------------------------------------------------------
+  plan:
+    name: "Terraform Plan (PR Validation)"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/aws
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Configure AWS Credentials via OIDC Workload Identity Federation
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Check Terraform Formatting
+        run: terraform fmt -check
+
+      - name: Initialize Terraform (S3 Remote Backend with DynamoDB Locks)
+        run: terraform init
+
+      - name: Validate Terraform Manifests
+        run: terraform validate
+
+      - name: Generate Speculative Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+
+  # ----------------------------------------------------------------------------
+  # 2. Automated Apply (Runs on Merge to Main within 'production' Environment)
+  # ----------------------------------------------------------------------------
+  apply:
+    name: "Terraform Apply (Production)"
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform/aws
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Configure AWS Credentials via OIDC Workload Identity Federation
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Initialize Terraform (S3 Remote Backend with DynamoDB Locks)
+        run: terraform init
+
+      - name: Apply Infrastructure Changes
+        run: terraform apply -auto-approve
