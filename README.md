@@ -29,19 +29,27 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 ├── .github/
 │   └── workflows/
 │       ├── azure-deploy.yml        # Azure CI/CD pipeline (Lint, Plan, Apply)
-│       └── aws-deploy.yml          # AWS CI/CD pipeline (Lint, Plan, Apply)
+│       ├── aws-deploy.yml          # AWS CI/CD pipeline (Lint, Plan, Apply)
+│       └── cloudflare-deploy.yml   # Cloudflare CI/CD pipeline (Lint, Plan, Apply)
 ├── terraform/
 │   ├── azure/                      # Azure cloud infrastructure & workloads
 │   │   ├── providers.tf            # Azure provider & AzureRM remote state backend
 │   │   ├── main.tf                 # Cloud resources & network landing zones
 │   │   ├── variables.tf            # Input variable definitions
 │   │   └── outputs.tf              # Resource outputs
-│   └── aws/                        # AWS cloud infrastructure & workloads
-│       ├── providers.tf            # AWS provider, S3 backend & DynamoDB state locking
-│       ├── locals.tf               # Canonical resource naming convention
-│       ├── main.tf                 # S3 backup bucket & EKS connector IAM role
+│   ├── aws/                        # AWS cloud infrastructure & workloads
+│   │   ├── providers.tf            # AWS provider, S3 backend & DynamoDB state locking
+│   │   ├── locals.tf               # Canonical resource naming convention
+│   │   ├── main.tf                 # S3 backup bucket & EKS connector IAM role
+│   │   ├── variables.tf            # Input variable definitions
+│   │   ├── outputs.tf              # Resource outputs
+│   │   └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
+│   └── cloudflare/                 # Cloudflare Zero Trust Tunnels, DNS & Access SSO
+│       ├── providers.tf            # Cloudflare provider & S3 backend with native S3 locking
+│       ├── locals.tf               # Tunnel naming convention
+│       ├── main.tf                 # Zero Trust Tunnels, Ingress routing, DNS, Access SSO
 │       ├── variables.tf            # Input variable definitions
-│       ├── outputs.tf              # Resource outputs
+│       ├── outputs.tf              # Tunnel ID & token outputs
 │       └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
 └── README.md
 ```
@@ -59,7 +67,7 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 
 ## 🚦 Deployment Lifecycle & Protection Gates
 
-Both `azure-deploy.yml` and `aws-deploy.yml` follow an identical two-stage gate:
+All deployment pipelines (`azure-deploy.yml`, `aws-deploy.yml`, and `cloudflare-deploy.yml`) follow an identical two-stage gate:
 
 * **Pull Request (`pull_request`)**:
   * Runs `terraform fmt -check`, `terraform init`, and `terraform validate`.
@@ -84,6 +92,7 @@ State is **never** stored locally or committed to Git.
 | :--- | :--- | :--- |
 | AWS (`terraform/aws/`) | S3 bucket, server-side encrypted, key `aws-workloads/terraform.tfstate` (`us-east-2`) | DynamoDB table |
 | Azure (`terraform/azure/`) | AzureRM Blob Storage container | Native blob lease |
+| Cloudflare (`terraform/cloudflare/`) | S3 bucket, server-side encrypted, key `cloudflare-workloads/terraform.tfstate` (`us-east-2`) | **Native S3 lockfile** (`use_lockfile = true`) |
 
 ---
 

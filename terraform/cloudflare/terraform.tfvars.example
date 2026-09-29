@@ -1,0 +1,18 @@
+# ==============================================================================
+# Cloudflare Terraform Input Variables (EXAMPLE)
+# ==============================================================================
+# Copy this file to `terraform.tfvars` (gitignored) and populate with your credentials.
+# In CI, these values are passed via GitHub Actions secrets and environment variables.
+# ==============================================================================
+
+platform              = "clf"
+env                   = "prod"
+region_code           = "use2"
+iteration             = "001"
+domain_name           = "bar2sek.com"
+destination_email     = "user@example.com"
+
+# Sensitive Credentials & IDs
+cloudflare_api_token  = "your-cloudflare-api-token"
+cloudflare_account_id = "your-cloudflare-account-id"
+cloudflare_zone_id    = "your-cloudflare-zone-id"

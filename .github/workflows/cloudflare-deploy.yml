@@ -1,0 +1,108 @@
+name: "Cloudflare Deployments CI/CD"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "terraform/cloudflare/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/cloudflare/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # 1. Validation & Speculative Plan (Runs on Pull Requests)
+  # ----------------------------------------------------------------------------
+  plan:
+    name: "Terraform Plan (PR Validation)"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/cloudflare
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+
+      - name: Configure AWS Credentials via OIDC (for S3 State Backend)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Check Terraform Formatting
+        run: terraform fmt -check
+
+      # The state bucket name embeds the AWS account ID, so it is a masked secret
+      # rather than a variable — `run:` commands are echoed verbatim into logs.
+      - name: Initialize Terraform (S3 Remote Backend with Native S3 Lockfile)
+        run: terraform init -backend-config="bucket=${{ secrets.AWS_TF_STATE_BUCKET }}"
+
+      - name: Validate Terraform Manifests
+        run: terraform validate
+
+      - name: Generate Speculative Terraform Plan
+        id: plan
+        env:
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_destination_email: ${{ vars.CLOUDFLARE_DESTINATION_EMAIL }}
+        run: terraform plan -no-color
+
+  # ----------------------------------------------------------------------------
+  # 2. Automated Apply (Runs on Merge to Main within 'production' Environment)
+  # ----------------------------------------------------------------------------
+  apply:
+    name: "Terraform Apply (Production)"
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform/cloudflare
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+
+      - name: Configure AWS Credentials via OIDC (for S3 State Backend)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      # The state bucket name embeds the AWS account ID, so it is a masked secret
+      # rather than a variable — `run:` commands are echoed verbatim into logs.
+      - name: Initialize Terraform (S3 Remote Backend with Native S3 Lockfile)
+        run: terraform init -backend-config="bucket=${{ secrets.AWS_TF_STATE_BUCKET }}"
+
+      - name: Apply Infrastructure Changes
+        env:
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_destination_email: ${{ vars.CLOUDFLARE_DESTINATION_EMAIL }}
+        run: terraform apply -auto-approve
