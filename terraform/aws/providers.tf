@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.10.0"
 
   required_providers {
     aws = {
@@ -14,15 +14,18 @@ terraform {
   # account ID, and backend blocks cannot interpolate variables (the backend
   # initializes before any variable is evaluated). It is injected at init time:
   #
-  #   CI:    terraform init -backend-config="bucket=${{ vars.AWS_TF_STATE_BUCKET }}"
+  #   CI:    terraform init -backend-config="bucket=${{ secrets.AWS_TF_STATE_BUCKET }}"
   #   Local: terraform init -backend-config=backend.hcl   # gitignored, see backend.hcl.example
+  #
+  # State locking uses S3 native lockfiles (Terraform 1.10+) via conditional writes,
+  # eliminating the need for an external DynamoDB lock table.
   #
   # Do NOT hardcode the bucket name here — this repository is public-by-default.
   backend "s3" {
-    key            = "aws-workloads/terraform.tfstate"
-    region         = "us-east-2"
-    dynamodb_table = "ddb-aws-tflocks-prod-use2-001"
-    encrypt        = true
+    key          = "aws-workloads/terraform.tfstate"
+    region       = "us-east-2"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 

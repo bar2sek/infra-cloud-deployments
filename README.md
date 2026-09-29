@@ -38,7 +38,7 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │   │   ├── variables.tf            # Input variable definitions
 │   │   └── outputs.tf              # Resource outputs
 │   ├── aws/                        # AWS cloud infrastructure & workloads
-│   │   ├── providers.tf            # AWS provider, S3 backend & DynamoDB state locking
+│   │   ├── providers.tf            # AWS provider, S3 backend & native S3 lockfile
 │   │   ├── locals.tf               # Canonical resource naming convention
 │   │   ├── main.tf                 # S3 backup bucket & EKS connector IAM role
 │   │   ├── variables.tf            # Input variable definitions
@@ -90,7 +90,7 @@ State is **never** stored locally or committed to Git.
 
 | Plane | Backend | Locking |
 | :--- | :--- | :--- |
-| AWS (`terraform/aws/`) | S3 bucket, server-side encrypted, key `aws-workloads/terraform.tfstate` (`us-east-2`) | DynamoDB table |
+| AWS (`terraform/aws/`) | S3 bucket, server-side encrypted, key `aws-workloads/terraform.tfstate` (`us-east-2`) | **Native S3 lockfile** (`use_lockfile = true`) |
 | Azure (`terraform/azure/`) | AzureRM Blob Storage container | Native blob lease |
 | Cloudflare (`terraform/cloudflare/`) | S3 bucket, server-side encrypted, key `cloudflare-workloads/terraform.tfstate` (`us-east-2`) | **Native S3 lockfile** (`use_lockfile = true`) |
 
