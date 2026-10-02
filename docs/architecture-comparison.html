@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terraform Architecture Visualizer Comparison</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #0f172a;
+      --border: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-rose: #f43f5e;
+      --accent-green: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 30px 20px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+    .view-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 24px 0 32px 0;
+    }
+    .btn {
+      background: #1e293b;
+      color: var(--text);
+      border: 1px solid #334155;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: #334155;
+    }
+    .btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      transition: all 0.3s ease;
+    }
+    .grid.single-col {
+      grid-template-columns: 1fr;
+      max-width: 1050px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .badge-tf { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-infra { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .card-body {
+      padding: 20px;
+    }
+    .diagram-wrapper {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .card-footer {
+      padding: 14px 20px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    ul.feature-list {
+      margin-top: 8px;
+      padding-left: 18px;
+    }
+    ul.feature-list li {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Terraform Architecture Visualizer Comparison</h1>
+      <p class="subtitle">Live analysis of <code>infra-cloud-deployments/terraform/aws</code> (S3 Offsite Backups & EKS Connector IAM)</p>
+    </header>
+
+    <div class="view-toggle">
+      <button class="btn active" id="btnSideBySide" onclick="setLayout('side-by-side')">Side-by-Side View</button>
+      <button class="btn" id="btnTfOnly" onclick="setLayout('tf-only')">Show Terraform Graph Only</button>
+      <button class="btn" id="btnInframapOnly" onclick="setLayout('inframap-only')">Show Inframap Only</button>
+    </div>
+
+    <div class="grid" id="diagramGrid">
+      <!-- Card 1: terraform graph -->
+      <div class="card" id="cardTf">
+        <div class="card-header">
+          <div class="card-title">1. terraform graph (Graphviz DOT DAG)</div>
+          <span class="badge badge-tf">Execution Engine</span>
+        </div>
+        <div class="card-body">
+          <div class="diagram-wrapper" style="background: #ffffff; padding: 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 480" width="100%" height="auto" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;">
+              <defs>
+                <marker id="arrow1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#000000"/>
+                </marker>
+              </defs>
+              <rect width="100%" height="100%" fill="#ffffff"/>
+              <text x="475" y="30" text-anchor="middle" font-size="15" font-weight="bold" fill="#111827">terraform graph Output</text>
+              <text x="475" y="50" text-anchor="middle" font-size="11" fill="#6b7280">Compiler Dependency DAG (State execution order)</text>
+
+              <!-- IAM Nodes -->
+              <rect x="30" y="100" width="410" height="36" fill="#f9fafb" stroke="#374151" stroke-width="1.2"/>
+              <text x="235" y="123" text-anchor="middle" font-size="11" font-family="monospace" fill="#111827">aws_iam_role_policy_attachment.eks_connector_policy</text>
+
+              <rect x="580" y="75" width="320" height="36" fill="#f9fafb" stroke="#374151" stroke-width="1.2"/>
+              <text x="740" y="98" text-anchor="middle" font-size="11" font-family="monospace" fill="#111827">aws_iam_policy.eks_connector_agent</text>
+
+              <rect x="580" y="130" width="320" height="36" fill="#f9fafb" stroke="#374151" stroke-width="1.2"/>
+              <text x="740" y="153" text-anchor="middle" font-size="11" font-family="monospace" fill="#111827">aws_iam_role.eks_connector</text>
+
+              <path d="M 440 112 L 575 93" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow1)"/>
+              <path d="M 440 125 L 575 145" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow1)"/>
+
+              <!-- S3 Nodes -->
+              <rect x="30" y="230" width="410" height="36" fill="#f9fafb" stroke="#374151" stroke-width="1.2"/>
+              <text x="235" y="253" text-anchor="middle" font-size="11" font-family="monospace" fill="#111827">aws_s3_bucket_public_access_block.backups_privacy</text>
+
+              <rect x="30" y="285" width="410" height="36" fill="#f9fafb" stroke="#374151" stroke-width="1.2"/>
+              <text x="235" y="308" text-anchor="middle" font-size="11" font-family="monospace" fill="#111827">aws_s3_bucket_server_side_encryption_configuration.backups_crypto</text>
+
+              <rect x="30" y="340" width="410" height="36" fill="#f9fafb" stroke="#374151" stroke-width="1.2"/>
+              <text x="235" y="363" text-anchor="middle" font-size="11" font-family="monospace" fill="#111827">aws_s3_bucket_versioning.backups</text>
+
+              <rect x="580" y="285" width="320" height="36" fill="#f9fafb" stroke="#374151" stroke-width="1.2"/>
+              <text x="740" y="308" text-anchor="middle" font-size="11" font-family="monospace" fill="#111827">aws_s3_bucket.backups</text>
+
+              <path d="M 440 248 L 575 295" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow1)"/>
+              <path d="M 440 303 L 575 303" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow1)"/>
+              <path d="M 440 358 L 575 311" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow1)"/>
+
+              <rect x="30" y="415" width="870" height="26" fill="#f3f4f6"/>
+              <text x="465" y="432" text-anchor="middle" font-size="11" fill="#4b5563">Arrows = Build dependencies (e.g. versioning requires bucket ID first)</text>
+            </svg>
+          </div>
+        </div>
+        <div class="card-footer">
+          <strong>Best For:</strong> Debugging Terraform race conditions, circular dependencies, and destroy order.
+          <ul class="feature-list">
+            <li>Zero dependencies (built into the Terraform binary)</li>
+            <li>Shows 7 boxes for 2 AWS services</li>
+            <li>Arrows flow backward to prerequisites</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Card 2: inframap -->
+      <div class="card" id="cardInframap">
+        <div class="card-header">
+          <div class="card-title">2. inframap (Cloud Semantic Topology)</div>
+          <span class="badge badge-infra">Cloud Architecture</span>
+        </div>
+        <div class="card-body">
+          <div class="diagram-wrapper" style="background: #0f172a; padding: 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 560" width="100%" height="auto" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;">
+              <defs>
+                <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8"/>
+                </marker>
+              </defs>
+              <rect width="100%" height="100%" fill="#0f172a"/>
+              <text x="475" y="32" text-anchor="middle" font-size="16" font-weight="bold" fill="#f8fafc">inframap Output</text>
+              <text x="475" y="52" text-anchor="middle" font-size="12" fill="#94a3b8">Cloud Resource Topology with Grouped Cards &amp; Badges</text>
+
+              <!-- Region Boundary -->
+              <rect x="25" y="75" width="900" height="430" rx="10" fill="#1e293b" fill-opacity="0.3" stroke="#334155" stroke-width="1.5" stroke-dasharray="5,5"/>
+              <rect x="40" y="64" width="125" height="22" rx="4" fill="#f59e0b"/>
+              <text x="102" y="79" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">AWS :: us-east-2</text>
+
+              <!-- S3 Box -->
+              <g transform="translate(50, 105)">
+                <rect width="390" height="365" rx="8" fill="#0b1120" stroke="#38bdf8" stroke-width="1.2" stroke-opacity="0.5"/>
+                <g transform="translate(16, 16)">
+                  <rect width="32" height="32" rx="6" fill="#0284c7"/>
+                  <text x="42" y="22" font-size="14" font-weight="bold" fill="#f8fafc">Amazon S3</text>
+                </g>
+                <g transform="translate(16, 60)">
+                  <rect width="358" height="275" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1.2"/>
+                  <text x="14" y="26" font-size="13" font-weight="bold" fill="#38bdf8">s3-aws-backups-prod-use2-001</text>
+                  <text x="14" y="44" font-size="11" font-family="monospace" fill="#94a3b8">aws_s3_bucket.backups</text>
+                  <line x1="14" y1="56" x2="344" y2="56" stroke="#334155"/>
+                  
+                  <g transform="translate(14, 68)">
+                    <rect width="330" height="34" rx="4" fill="#0f172a" stroke="#22c55e" stroke-width="1"/>
+                    <text x="10" y="21" font-size="11" fill="#4ade80">🔒 Server-Side Encryption: AES256</text>
+                  </g>
+                  <g transform="translate(14, 112)">
+                    <rect width="330" height="34" rx="4" fill="#0f172a" stroke="#0ea5e9" stroke-width="1"/>
+                    <text x="10" y="21" font-size="11" fill="#38bdf8">🛡️ Public Access Block: Enabled</text>
+                  </g>
+                  <g transform="translate(14, 156)">
+                    <rect width="330" height="34" rx="4" fill="#0f172a" stroke="#a855f7" stroke-width="1"/>
+                    <text x="10" y="21" font-size="11" fill="#c084fc">📦 Object Versioning: Enabled</text>
+                  </g>
+                  <text x="14" y="220" font-size="10" fill="#64748b" font-style="italic">Configuration sub-resources consolidated into parent card</text>
+                </g>
+              </g>
+
+              <!-- IAM Box -->
+              <g transform="translate(470, 105)">
+                <rect width="430" height="365" rx="8" fill="#0b1120" stroke="#f43f5e" stroke-width="1.2" stroke-opacity="0.5"/>
+                <g transform="translate(16, 16)">
+                  <rect width="32" height="32" rx="6" fill="#e11d48"/>
+                  <text x="42" y="22" font-size="14" font-weight="bold" fill="#f8fafc">AWS Identity &amp; Access (IAM)</text>
+                </g>
+                <g transform="translate(16, 60)">
+                  <!-- Role -->
+                  <rect width="398" height="90" rx="6" fill="#1e293b" stroke="#f43f5e" stroke-width="1.2"/>
+                  <text x="14" y="24" font-size="12" font-weight="bold" fill="#fb7185">role-aws-eks-connector-prod-admin</text>
+                  <text x="14" y="42" font-size="11" font-family="monospace" fill="#94a3b8">aws_iam_role.eks_connector</text>
+                  <rect x="14" y="52" width="230" height="22" rx="4" fill="#0f172a"/>
+                  <text x="20" y="67" font-size="10" fill="#fca5a5">AssumeRole: ssm.amazonaws.com</text>
+
+                  <!-- Relation Edge -->
+                  <g transform="translate(200, 92)">
+                    <path d="M 0 0 L 0 35" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow2)"/>
+                    <rect x="10" y="8" width="105" height="18" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1"/>
+                    <text x="16" y="21" font-size="9" font-weight="bold" fill="#38bdf8">policy attached</text>
+                  </g>
+
+                  <!-- Policy -->
+                  <g transform="translate(0, 130)">
+                    <rect width="398" height="90" rx="6" fill="#1e293b" stroke="#f43f5e" stroke-width="1.2"/>
+                    <text x="14" y="24" font-size="12" font-weight="bold" fill="#fb7185">policy-aws-eks-connector-agent-prod-001</text>
+                    <text x="14" y="42" font-size="11" font-family="monospace" fill="#94a3b8">aws_iam_policy.eks_connector_agent</text>
+                    <rect x="14" y="52" width="280" height="22" rx="4" fill="#0f172a"/>
+                    <text x="20" y="67" font-size="10" fill="#fca5a5">Actions: ssmmessages:CreateControlChannel, ...</text>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div class="card-footer">
+          <strong>Best For:</strong> Systems documentation, stakeholder architecture reviews, and onboarding.
+          <ul class="feature-list">
+            <li>Folds 4 S3 resources into 1 high-level service card with badges</li>
+            <li>Groups resources into AWS provider &amp; service clusters</li>
+            <li>Arrows represent functional permissions &amp; data flow</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setLayout(mode) {
+      const grid = document.getElementById('diagramGrid');
+      const cardTf = document.getElementById('cardTf');
+      const cardInfra = document.getElementById('cardInframap');
+      const btnSide = document.getElementById('btnSideBySide');
+      const btnTf = document.getElementById('btnTfOnly');
+      const btnInfra = document.getElementById('btnInframapOnly');
+
+      btnSide.classList.remove('active');
+      btnTf.classList.remove('active');
+      btnInfra.classList.remove('active');
+
+      if (mode === 'side-by-side') {
+        grid.className = 'grid';
+        cardTf.style.display = 'block';
+        cardInfra.style.display = 'block';
+        btnSide.classList.add('active');
+      } else if (mode === 'tf-only') {
+        grid.className = 'grid single-col';
+        cardTf.style.display = 'block';
+        cardInfra.style.display = 'none';
+        btnTf.classList.add('active');
+      } else if (mode === 'inframap-only') {
+        grid.className = 'grid single-col';
+        cardTf.style.display = 'none';
+        cardInfra.style.display = 'block';
+        btnInfra.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>

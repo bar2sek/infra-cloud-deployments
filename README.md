@@ -51,6 +51,10 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │       ├── variables.tf            # Input variable definitions
 │       ├── outputs.tf              # Tunnel ID & token outputs
 │       └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
+├── docs/                           # Automated architecture diagrams & documentation
+│   ├── architecture-aws.svg        # Auto-generated AWS topology
+│   ├── architecture-azure.svg      # Auto-generated Azure topology
+│   └── architecture-cloudflare.svg # Auto-generated Cloudflare topology
 └── README.md
 ```
 
@@ -62,6 +66,22 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 > ```bash
 > rm -rf terraform/*/.terraform
 > ```
+
+---
+
+## 🗺️ Live Cloud Architecture & Topology
+
+These topology diagrams are **automatically generated and kept continuously up-to-date** on every deployment by GitHub Actions using [Inframap](https://github.com/cycloidio/inframap) and Graphviz.
+
+### 1. Amazon Web Services (AWS)
+![AWS Architecture](docs/architecture-aws.svg)
+
+### 2. Microsoft Azure
+![Azure Architecture](docs/architecture-azure.svg)
+
+### 3. Cloudflare Zero Trust & Ingress Routing
+![Cloudflare Architecture](docs/architecture-cloudflare.svg)
+
 
 ---
 

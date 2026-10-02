@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 620" width="100%" height="auto" style="background:#0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;">
+  <defs>
+    <marker id="cfArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f97316"/>
+    </marker>
+  </defs>
+
+  <text x="475" y="35" text-anchor="middle" font-size="18" font-weight="bold" fill="#f8fafc">Cloudflare Zero Trust &amp; Homelab Ingress Architecture</text>
+  <text x="475" y="58" text-anchor="middle" font-size="13" fill="#94a3b8">Edge Network &amp; Argo Smart Routing Tunnel to On-Prem Talos Cluster</text>
+
+  <!-- Cloudflare Edge Container -->
+  <rect x="30" y="80" width="890" height="500" rx="12" fill="#1e293b" fill-opacity="0.4" stroke="#f97316" stroke-width="1.5" stroke-dasharray="6,6"/>
+  <rect x="45" y="68" width="160" height="24" rx="6" fill="#f97316"/>
+  <text x="125" y="84" text-anchor="middle" font-size="11" font-weight="bold" fill="#0f172a">Cloudflare Edge :: Global</text>
+
+  <!-- Left Column: Zero Trust Tunnel & SSO -->
+  <g transform="translate(60, 110)">
+    <!-- Tunnel Box -->
+    <rect width="390" height="220" rx="8" fill="#0f172a" stroke="#f97316" stroke-width="1.2"/>
+    <g transform="translate(16, 16)">
+      <rect width="32" height="32" rx="6" fill="#f97316"/>
+      <path d="M 8 16 L 24 16 M 16 8 L 24 16 L 16 24" stroke="#ffffff" stroke-width="2" fill="none"/>
+      <text x="42" y="21" font-size="14" font-weight="bold" fill="#f8fafc">Zero Trust Cloudflared Tunnel</text>
+    </g>
+
+    <g transform="translate(16, 60)">
+      <rect width="358" height="140" rx="6" fill="#1e293b" stroke="#334155"/>
+      <text x="14" y="26" font-size="13" font-weight="bold" fill="#fb923c">tunnel-prod-homelab-001</text>
+      <text x="14" y="44" font-size="11" font-family="monospace" fill="#94a3b8">cloudflare_zero_trust_tunnel_cloudflared</text>
+      <line x1="14" y1="56" x2="344" y2="56" stroke="#334155"/>
+      <text x="14" y="78" font-size="11" fill="#4ade80">🔒 End-to-End Argo Tunnel Encrypted</text>
+      <text x="14" y="100" font-size="11" fill="#38bdf8">🌐 Ingress Protocol: HTTP / HTTPS / TCP</text>
+      <text x="14" y="122" font-size="11" fill="#cbd5e1">🎯 Outbound-only connectivity to Edge</text>
+    </g>
+
+    <!-- Access SSO Box -->
+    <g transform="translate(0, 240)">
+      <rect width="390" height="190" rx="8" fill="#0f172a" stroke="#a855f7" stroke-width="1.2"/>
+      <g transform="translate(16, 16)">
+        <rect width="32" height="32" rx="6" fill="#a855f7"/>
+        <text x="42" y="21" font-size="14" font-weight="bold" fill="#f8fafc">Access Application (SSO)</text>
+      </g>
+      <g transform="translate(16, 60)">
+        <rect width="358" height="110" rx="6" fill="#1e293b" stroke="#334155"/>
+        <text x="14" y="26" font-size="13" font-weight="bold" fill="#c084fc">Homelab Admin Applications</text>
+        <text x="14" y="48" font-size="11" fill="#94a3b8">Domain: grafana.* (Session: 24h)</text>
+        <rect x="14" y="60" width="330" height="32" rx="4" fill="#0f172a" stroke="#a855f7" stroke-width="0.8"/>
+        <text x="24" y="80" font-size="11" fill="#e9d5ff">Decision: Allow Authorized Admin Email</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Right Column: Ingress Service Routing -->
+  <g transform="translate(480, 110)">
+    <rect width="410" height="430" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.2"/>
+    <g transform="translate(16, 16)">
+      <rect width="32" height="32" rx="6" fill="#0284c7"/>
+      <text x="42" y="21" font-size="14" font-weight="bold" fill="#f8fafc">Tunnel Ingress Rules &amp; DNS</text>
+    </g>
+
+    <g transform="translate(16, 55)">
+      <!-- 7 Ingress items -->
+      <g transform="translate(0, 0)">
+        <rect width="378" height="44" rx="6" fill="#1e293b"/>
+        <text x="12" y="26" font-size="12" font-weight="bold" fill="#38bdf8">tesla.*</text>
+        <text x="120" y="26" font-size="11" font-family="monospace" fill="#94a3b8">→ teslamate:4000</text>
+      </g>
+      <g transform="translate(0, 50)">
+        <rect width="378" height="44" rx="6" fill="#1e293b"/>
+        <text x="12" y="26" font-size="12" font-weight="bold" fill="#38bdf8">finance.*</text>
+        <text x="120" y="26" font-size="11" font-family="monospace" fill="#94a3b8">→ actual-budget:80</text>
+      </g>
+      <g transform="translate(0, 100)">
+        <rect width="378" height="44" rx="6" fill="#1e293b"/>
+        <text x="12" y="26" font-size="12" font-weight="bold" fill="#38bdf8">diet.*</text>
+        <text x="120" y="26" font-size="11" font-family="monospace" fill="#94a3b8">→ mealie:80</text>
+      </g>
+      <g transform="translate(0, 150)">
+        <rect width="378" height="44" rx="6" fill="#1e293b"/>
+        <text x="12" y="26" font-size="12" font-weight="bold" fill="#38bdf8">grafana.*</text>
+        <text x="120" y="26" font-size="11" font-family="monospace" fill="#94a3b8">→ ingress-nginx:443 (SSO)</text>
+      </g>
+      <g transform="translate(0, 200)">
+        <rect width="378" height="44" rx="6" fill="#1e293b"/>
+        <text x="12" y="26" font-size="12" font-weight="bold" fill="#38bdf8">omni.*</text>
+        <text x="120" y="26" font-size="11" font-family="monospace" fill="#94a3b8">→ 10.10.10.5:443</text>
+      </g>
+      <g transform="translate(0, 250)">
+        <rect width="378" height="44" rx="6" fill="#1e293b"/>
+        <text x="12" y="26" font-size="12" font-weight="bold" fill="#38bdf8">ceph.*</text>
+        <text x="120" y="26" font-size="11" font-family="monospace" fill="#94a3b8">→ ingress-nginx:443</text>
+      </g>
+      <g transform="translate(0, 300)">
+        <rect width="378" height="44" rx="6" fill="#1e293b"/>
+        <text x="12" y="26" font-size="12" font-weight="bold" fill="#38bdf8">auth.*</text>
+        <text x="120" y="26" font-size="11" font-family="monospace" fill="#94a3b8">→ ingress-nginx:443</text>
+      </g>
+    </g>
+  </g>
+</svg>

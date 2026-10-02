@@ -66,6 +66,14 @@ jobs:
           TF_VAR_destination_email: ${{ vars.CLOUDFLARE_DESTINATION_EMAIL }}
         run: terraform plan -no-color
 
+      - name: Generate Speculative Topology Diagram
+        uses: ./.github/actions/generate-diagram
+        with:
+          working-directory: terraform/cloudflare
+          output-file: docs/architecture-cloudflare.svg
+          provider-name: "Cloudflare"
+          commit-changes: "false"
+
   # ----------------------------------------------------------------------------
   # 2. Automated Apply (Runs on Merge to Main within 'production' Environment)
   # ----------------------------------------------------------------------------
@@ -74,6 +82,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      id-token: write
+      contents: write
     defaults:
       run:
         working-directory: terraform/cloudflare
@@ -106,3 +117,12 @@ jobs:
           TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
           TF_VAR_destination_email: ${{ vars.CLOUDFLARE_DESTINATION_EMAIL }}
         run: terraform apply -auto-approve
+
+      - name: Generate & Commit Updated Topology Diagram
+        uses: ./.github/actions/generate-diagram
+        with:
+          working-directory: terraform/cloudflare
+          output-file: docs/architecture-cloudflare.svg
+          provider-name: "Cloudflare"
+          commit-changes: "true"
+
