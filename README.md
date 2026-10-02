@@ -74,13 +74,17 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 These topology diagrams are **automatically generated and kept continuously up-to-date** on every deployment by GitHub Actions using [Inframap](https://github.com/cycloidio/inframap) and Graphviz.
 
 ### 1. Amazon Web Services (AWS)
-![AWS Architecture](docs/architecture-aws.svg)
+![AWS Architecture](docs/architecture-aws.png)
+*Vector source:* [`docs/architecture-aws.svg`](docs/architecture-aws.svg)
 
 ### 2. Microsoft Azure
-![Azure Architecture](docs/architecture-azure.svg)
+![Azure Architecture](docs/architecture-azure.png)
+*Vector source:* [`docs/architecture-azure.svg`](docs/architecture-azure.svg)
 
 ### 3. Cloudflare Zero Trust & Ingress Routing
-![Cloudflare Architecture](docs/architecture-cloudflare.svg)
+![Cloudflare Architecture](docs/architecture-cloudflare.png)
+*Vector source:* [`docs/architecture-cloudflare.svg`](docs/architecture-cloudflare.svg)
+
 
 
 ---
