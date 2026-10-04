@@ -68,7 +68,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab_tunnel_confi
 resource "cloudflare_record" "tesla_dns" {
   zone_id = var.cloudflare_zone_id
   name    = "tesla"
-  value   = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
@@ -76,7 +76,7 @@ resource "cloudflare_record" "tesla_dns" {
 resource "cloudflare_record" "finance_dns" {
   zone_id = var.cloudflare_zone_id
   name    = "finance"
-  value   = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
@@ -84,7 +84,7 @@ resource "cloudflare_record" "finance_dns" {
 resource "cloudflare_record" "diet_dns" {
   zone_id = var.cloudflare_zone_id
   name    = "diet"
-  value   = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
@@ -92,7 +92,7 @@ resource "cloudflare_record" "diet_dns" {
 resource "cloudflare_record" "grafana_dns" {
   zone_id = var.cloudflare_zone_id
   name    = "grafana"
-  value   = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
@@ -100,7 +100,7 @@ resource "cloudflare_record" "grafana_dns" {
 resource "cloudflare_record" "omni_dns" {
   zone_id = var.cloudflare_zone_id
   name    = "omni"
-  value   = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
@@ -108,7 +108,7 @@ resource "cloudflare_record" "omni_dns" {
 resource "cloudflare_record" "ceph_dns" {
   zone_id = var.cloudflare_zone_id
   name    = "ceph"
-  value   = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
@@ -116,7 +116,7 @@ resource "cloudflare_record" "ceph_dns" {
 resource "cloudflare_record" "auth_dns" {
   zone_id = var.cloudflare_zone_id
   name    = "auth"
-  value   = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
 }
