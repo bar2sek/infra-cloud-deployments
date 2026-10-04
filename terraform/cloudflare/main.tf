@@ -155,3 +155,18 @@ resource "cloudflare_zero_trust_access_policy" "apps_policy" {
   }
 }
 
+# 5. Microsoft Entra ID (Azure AD) Identity Provider for Cloudflare Access
+resource "cloudflare_zero_trust_access_identity_provider" "entra_id" {
+  count      = var.entra_client_id != "" ? 1 : 0
+  account_id = var.cloudflare_account_id
+  name       = "Microsoft Entra ID"
+  type       = "azureAD"
+
+  config {
+    client_id      = var.entra_client_id
+    client_secret  = var.entra_client_secret
+    directory_id   = var.entra_tenant_id
+    support_groups = true
+  }
+}
+

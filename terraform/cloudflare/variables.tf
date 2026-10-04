@@ -49,3 +49,22 @@ variable "cloudflare_zone_id" {
   type        = string
   description = "Cloudflare DNS Zone ID"
 }
+
+variable "entra_client_id" {
+  type        = string
+  description = "Microsoft Entra ID Application (Client) ID"
+  default     = ""
+}
+
+variable "entra_client_secret" {
+  type        = string
+  description = "Microsoft Entra ID Application Client Secret"
+  sensitive   = true
+  default     = ""
+}
+
+variable "entra_tenant_id" {
+  type        = string
+  description = "Microsoft Entra ID Directory (Tenant) ID"
+  default     = ""
+}
