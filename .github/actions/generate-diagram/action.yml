@@ -1,5 +1,12 @@
 name: "Generate Architecture Diagram"
-description: "Generates a cloud semantic topology diagram using Inframap and Graphviz"
+description: "Renders a cloud topology diagram with Inframap + Graphviz and uploads it as a workflow artifact"
+
+# Diagrams are published as a downloadable workflow artifact, never committed:
+#   * `main` is protected; every change (including diagrams) goes through a PR.
+#   * The calling apply job holds production cloud credentials, so it keeps
+#     `contents: read` and cannot write to the repository.
+# To refresh the committed docs/ diagrams, download the artifact from the run
+# and include it in a normal pull request.
 
 inputs:
   working-directory:
@@ -11,10 +18,6 @@ inputs:
   provider-name:
     description: "Cloud provider name (e.g. AWS, Azure, Cloudflare)"
     required: true
-  commit-changes:
-    description: "Whether to commit the updated diagram back to git (main branch only)"
-    required: false
-    default: "false"
 
 runs:
   using: "composite"
@@ -26,46 +29,46 @@ runs:
           sudo apt-get update -qq && sudo apt-get install -y -qq graphviz
         fi
 
-    - name: Install Inframap Binary
+    # Pinned version AND checksum: this binary executes inside jobs that hold
+    # cloud credentials. The SHA-256 matches GitHub's own release asset digest.
+    - name: Install Inframap Binary (checksum-verified)
       shell: bash
+      env:
+        INFRAMAP_VERSION: "v0.8.0"
+        INFRAMAP_SHA256: "f1b5372c4a64393a7f67a21bed41a981eb4ca449480558dfd173717f41ffc213"
       run: |
         if ! command -v inframap &> /dev/null; then
-          curl -sL https://github.com/cycloidio/inframap/releases/download/v0.8.0/inframap-linux-amd64.tar.gz | tar -xz
-          chmod +x inframap-linux-amd64
-          sudo mv inframap-linux-amd64 /usr/local/bin/inframap
+          curl -fsSL -o /tmp/inframap.tar.gz \
+            "https://github.com/cycloidio/inframap/releases/download/${INFRAMAP_VERSION}/inframap-linux-amd64.tar.gz"
+          echo "${INFRAMAP_SHA256}  /tmp/inframap.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/inframap.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/inframap-linux-amd64 /usr/local/bin/inframap
         fi
 
     - name: Generate Topology Diagram via Inframap
       shell: bash
+      env:
+        WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        OUTPUT_FILE: ${{ inputs.output-file }}
+        PROVIDER_NAME: ${{ inputs.provider-name }}
       run: |
-        mkdir -p "$(dirname "${{ inputs.output-file }}")"
-        echo "Generating architecture diagram for ${{ inputs.provider-name }} from ${{ inputs.working-directory }}..."
-        inframap generate "${{ inputs.working-directory }}" --clean=true > /tmp/graph.dot || true
+        mkdir -p "$(dirname "${OUTPUT_FILE}")"
+        echo "Generating architecture diagram for ${PROVIDER_NAME} from ${WORKING_DIRECTORY}..."
+        inframap generate "${WORKING_DIRECTORY}" --clean=true > /tmp/graph.dot || true
 
         if [ -s /tmp/graph.dot ]; then
-          dot -Tsvg /tmp/graph.dot -o "${{ inputs.output-file }}"
-          png_file="${{ inputs.output-file }}"
-          png_file="${png_file%.svg}.png"
-          dot -Tpng -Gdpi=150 /tmp/graph.dot -o "$png_file"
-          echo "Successfully generated ${{ inputs.output-file }} and $png_file"
+          dot -Tsvg /tmp/graph.dot -o "${OUTPUT_FILE}"
+          dot -Tpng -Gdpi=150 /tmp/graph.dot -o "${OUTPUT_FILE%.svg}.png"
+          echo "Generated ${OUTPUT_FILE} and ${OUTPUT_FILE%.svg}.png"
         else
           echo "Warning: inframap produced empty output, skipping rendering."
         fi
 
-    - name: Commit and Push Updated Architecture Diagrams
-      if: inputs.commit-changes == 'true'
-      shell: bash
-      run: |
-        git config --local user.email "bar2sek@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        png_file="${{ inputs.output-file }}"
-        png_file="${png_file%.svg}.png"
-        if git status --porcelain "${{ inputs.output-file }}" "$png_file" | grep -q "docs/"; then
-          echo "Changes detected in diagrams, committing..."
-          git add "${{ inputs.output-file }}" "$png_file"
-          git commit -m "docs(architecture): update ${{ inputs.provider-name }} topology diagrams [skip ci]"
-          git push
-        else
-          echo "No diagram changes detected."
-        fi
-
+    - name: Upload Diagrams as Workflow Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: architecture-${{ inputs.provider-name }}
+        path: |
+          ${{ inputs.output-file }}
+        if-no-files-found: warn
+        retention-days: 30

@@ -6,17 +6,22 @@ on:
       - main
     paths:
       - "terraform/aws/**"
+      - ".github/workflows/aws-deploy.yml"
+      - ".github/actions/generate-diagram/**"
   push:
     branches:
       - main
     paths:
       - "terraform/aws/**"
+      - ".github/workflows/aws-deploy.yml"
+      - ".github/actions/generate-diagram/**"
   workflow_dispatch:
 
+# Least privilege: OIDC token minting + read-only checkout. No job writes to
+# the repository; diagrams are uploaded as workflow artifacts.
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
 
 jobs:
   # ----------------------------------------------------------------------------
@@ -61,13 +66,12 @@ jobs:
         id: plan
         run: terraform plan -no-color
 
-      - name: Generate Speculative Topology Diagram
+      - name: Generate Speculative Topology Diagram (workflow artifact)
         uses: ./.github/actions/generate-diagram
         with:
           working-directory: terraform/aws
           output-file: docs/architecture-aws.svg
           provider-name: "AWS"
-          commit-changes: "false"
 
   # ----------------------------------------------------------------------------
   # 2. Automated Apply (Runs on Merge to Main within 'production' Environment)
@@ -79,7 +83,7 @@ jobs:
     environment: production
     permissions:
       id-token: write
-      contents: write
+      contents: read
     defaults:
       run:
         working-directory: terraform/aws
@@ -108,11 +112,10 @@ jobs:
       - name: Apply Infrastructure Changes
         run: terraform apply -auto-approve
 
-      - name: Generate & Commit Updated Topology Diagram
+      - name: Generate Topology Diagram (workflow artifact)
         uses: ./.github/actions/generate-diagram
         with:
           working-directory: terraform/aws
           output-file: docs/architecture-aws.svg
           provider-name: "AWS"
-          commit-changes: "true"
 
