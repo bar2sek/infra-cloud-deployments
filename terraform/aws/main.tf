@@ -45,7 +45,8 @@ resource "aws_s3_bucket_versioning" "backups" {
 
 # 2. AWS EKS Connector IAM Role
 resource "aws_iam_role" "eks_connector" {
-  name = local.iam_role_eks_connector
+  name                 = local.iam_role_eks_connector
+  permissions_boundary = local.workload_boundary_arn
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

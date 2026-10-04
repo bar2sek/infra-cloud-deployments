@@ -10,7 +10,7 @@ status: evergreen
 
 # Architecture Visualizer: `terraform graph`
 
-This note displays the **authentic native output** of running `terraform graph` against [`terraform/aws`](file:///Users/ryan.bartusek/Library/CloudStorage/GoogleDrive-bar2sek@outlook.com/My%20Drive/second-brain/infra-cloud-deployments/terraform/aws).
+This note displays the **authentic native output** of running `terraform graph` against [`terraform/aws`](../terraform/aws).
 
 ## Visual Render
 
