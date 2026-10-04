@@ -123,16 +123,28 @@ resource "cloudflare_record" "auth_dns" {
 
 
 # 4. Cloudflare Zero Trust Access Applications (SSO Protection)
-resource "cloudflare_zero_trust_access_application" "admin_apps" {
-  zone_id          = var.cloudflare_zone_id
-  name             = "Homelab Admin Applications"
-  domain           = "grafana.${var.domain_name}"
-  type             = "self_hosted"
-  session_duration = "24h"
+moved {
+  from = cloudflare_zero_trust_access_application.admin_apps
+  to   = cloudflare_zero_trust_access_application.apps["grafana"]
 }
 
-resource "cloudflare_zero_trust_access_policy" "admin_apps_policy" {
-  application_id = cloudflare_zero_trust_access_application.admin_apps.id
+moved {
+  from = cloudflare_zero_trust_access_policy.admin_apps_policy
+  to   = cloudflare_zero_trust_access_policy.apps_policy["grafana"]
+}
+
+resource "cloudflare_zero_trust_access_application" "apps" {
+  for_each         = local.access_apps
+  zone_id          = var.cloudflare_zone_id
+  name             = each.value.name
+  domain           = "${each.value.subdomain}.${var.domain_name}"
+  type             = "self_hosted"
+  session_duration = each.value.session_duration
+}
+
+resource "cloudflare_zero_trust_access_policy" "apps_policy" {
+  for_each       = local.access_apps
+  application_id = cloudflare_zero_trust_access_application.apps[each.key].id
   zone_id        = var.cloudflare_zone_id
   name           = "Allow Authorized Homelab Admin"
   precedence     = "1"
