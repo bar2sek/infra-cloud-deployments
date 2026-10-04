@@ -6,17 +6,22 @@ on:
       - main
     paths:
       - "terraform/cloudflare/**"
+      - ".github/workflows/cloudflare-deploy.yml"
+      - ".github/actions/generate-diagram/**"
   push:
     branches:
       - main
     paths:
       - "terraform/cloudflare/**"
+      - ".github/workflows/cloudflare-deploy.yml"
+      - ".github/actions/generate-diagram/**"
   workflow_dispatch:
 
+# Least privilege: OIDC token minting + read-only checkout. No job writes to
+# the repository; diagrams are uploaded as workflow artifacts.
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
 
 jobs:
   # ----------------------------------------------------------------------------
@@ -69,13 +74,12 @@ jobs:
           TF_VAR_entra_tenant_id: ${{ vars.ENTRA_TENANT_ID }}
         run: terraform plan -no-color
 
-      - name: Generate Speculative Topology Diagram
+      - name: Generate Speculative Topology Diagram (workflow artifact)
         uses: ./.github/actions/generate-diagram
         with:
           working-directory: terraform/cloudflare
           output-file: docs/architecture-cloudflare.svg
           provider-name: "Cloudflare"
-          commit-changes: "false"
 
   # ----------------------------------------------------------------------------
   # 2. Automated Apply (Runs on Merge to Main within 'production' Environment)
@@ -87,7 +91,7 @@ jobs:
     environment: production
     permissions:
       id-token: write
-      contents: write
+      contents: read
     defaults:
       run:
         working-directory: terraform/cloudflare
@@ -124,11 +128,10 @@ jobs:
           TF_VAR_entra_tenant_id: ${{ vars.ENTRA_TENANT_ID }}
         run: terraform apply -auto-approve
 
-      - name: Generate & Commit Updated Topology Diagram
+      - name: Generate Topology Diagram (workflow artifact)
         uses: ./.github/actions/generate-diagram
         with:
           working-directory: terraform/cloudflare
           output-file: docs/architecture-cloudflare.svg
           provider-name: "Cloudflare"
-          commit-changes: "true"
 

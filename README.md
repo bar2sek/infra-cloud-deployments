@@ -71,7 +71,10 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 
 ## 🗺️ Live Cloud Architecture & Topology
 
-These topology diagrams are **automatically generated and kept continuously up-to-date** on every deployment by GitHub Actions using [Inframap](https://github.com/cycloidio/inframap) and Graphviz.
+These topology diagrams are **generated on every plan and deployment** by GitHub Actions using [Inframap](https://github.com/cycloidio/inframap) (version- and checksum-pinned) and Graphviz, and published as a downloadable **workflow artifact**.
+
+> [!NOTE]
+> CI never commits to `main`. Branch protection applies to everyone, including admins and the CI bot, and the apply jobs hold production cloud credentials with a read-only repository token. To refresh the diagrams committed here, download the artifact from the latest run and include it in a pull request.
 
 ### 1. Amazon Web Services (AWS)
 ![AWS Architecture](docs/architecture-aws.png)
