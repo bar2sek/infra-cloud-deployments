@@ -155,6 +155,29 @@ resource "cloudflare_zero_trust_access_policy" "apps_policy" {
   }
 }
 
+# Path-scoped bypass for Authentik's OIDC back-channel (see locals.tf).
+resource "cloudflare_zero_trust_access_application" "authentik_backchannel" {
+  for_each         = local.authentik_backchannel_paths
+  zone_id          = var.cloudflare_zone_id
+  name             = each.value
+  domain           = "auth.${var.domain_name}/${each.key}"
+  type             = "self_hosted"
+  session_duration = "24h"
+}
+
+resource "cloudflare_zero_trust_access_policy" "authentik_backchannel_bypass" {
+  for_each       = local.authentik_backchannel_paths
+  application_id = cloudflare_zero_trust_access_application.authentik_backchannel[each.key].id
+  zone_id        = var.cloudflare_zone_id
+  name           = "Bypass: OIDC back-channel (client-authenticated)"
+  precedence     = "1"
+  decision       = "bypass"
+
+  include {
+    everyone = true
+  }
+}
+
 # 5. Microsoft Entra ID (Azure AD) Identity Provider
 # Configured via Zero Trust Integrations (Id: c85875c7-a031-4b14-8b75-b61ecb8f2dbd)
 # Cloudflare API policy restricts automated User API tokens from mutating
