@@ -34,5 +34,23 @@ locals {
       subdomain        = "diet"
       session_duration = "720h" # 30 days
     }
+    # The identity provider itself. Its only human user is the homelab admin,
+    # so a public login page and admin API add attack surface without benefit.
+    auth = {
+      name             = "Authentik"
+      subdomain        = "auth"
+      session_duration = "24h"
+    }
+  }
+
+  # Authentik OIDC back-channel endpoints that must stay reachable without an
+  # Access session. Grafana's SERVER (not a browser) calls them, so it cannot
+  # carry an Access cookie. They are not anonymous: the token endpoint requires
+  # the OAuth client secret, and userinfo requires a bearer access token.
+  # Cloudflare evaluates the most specific path first, so only these paths
+  # bypass the `auth` application above.
+  authentik_backchannel_paths = {
+    "application/o/token"    = "Authentik OIDC token endpoint (back-channel)"
+    "application/o/userinfo" = "Authentik OIDC userinfo endpoint (back-channel)"
   }
 }
