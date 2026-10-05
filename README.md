@@ -40,7 +40,7 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │   ├── aws/                        # AWS cloud infrastructure & workloads
 │   │   ├── providers.tf            # AWS provider, S3 backend & native S3 lockfile
 │   │   ├── locals.tf               # Canonical resource naming convention
-│   │   ├── main.tf                 # S3 backup bucket & EKS connector IAM role
+│   │   ├── main.tf                 # S3 backup bucket (+ lifecycle) & EKS connector IAM role
 │   │   ├── variables.tf            # Input variable definitions
 │   │   ├── outputs.tf              # Resource outputs
 │   │   └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
@@ -157,3 +157,6 @@ This repository is the cloud **execution plane**. Keep the split clean:
 | Cloud landing zones and IAM | `nix-mac` workstation state, GitHub governance modules |
 
 Never define the same resource in both repositories—ownership follows whichever plane controls its lifecycle.
+
+> [!IMPORTANT]
+> **Guardrail exception: the backup bucket.** `terraform/aws/main.tf` owns the bucket, versioning, encryption, public-access block, and lifecycle. Its **guardrails** are owned by `personal-technology/bootstrap/aws` (applied only by an administrator): the bucket policy (TLS only, `*.age` objects only, no governance bypass), S3 Object Lock (governance, 30 days), and the write-only uploader identity. The CI apply role carries an explicit Deny on changing them. This is deliberate: a pipeline must not control the guardrails that protect against it. Do not add `aws_s3_bucket_policy` or `aws_s3_bucket_object_lock_configuration` for this bucket here. The apply would fail with `AccessDenied` anyway.
