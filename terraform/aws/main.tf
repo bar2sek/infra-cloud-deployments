@@ -43,6 +43,51 @@ resource "aws_s3_bucket_versioning" "backups" {
   }
 }
 
+# Backup Retention Lifecycle
+#
+# Object Lock (GOVERNANCE, 30-day default retention) and the bucket policy are
+# guardrails owned by personal-technology/bootstrap/aws, not by this pipeline;
+# the CI apply role is explicitly denied from changing them. Lifecycle stays here
+# because it cannot weaken them: S3 lifecycle never deletes a locked version.
+#
+# Timeline per backup: locked days 0-30, current version expires (becomes
+# noncurrent) on day 35, permanently removed on day 36.
+resource "aws_s3_bucket_lifecycle_configuration" "backups" {
+  bucket = aws_s3_bucket.backups.id
+
+  depends_on = [aws_s3_bucket_versioning.backups]
+
+  rule {
+    id     = "expire-backups-after-35-days"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 35
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
+
+  rule {
+    id     = "remove-expired-delete-markers"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
+}
+
 # 2. AWS EKS Connector IAM Role
 resource "aws_iam_role" "eks_connector" {
   name                 = local.iam_role_eks_connector
