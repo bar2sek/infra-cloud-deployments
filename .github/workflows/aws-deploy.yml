@@ -47,9 +47,12 @@ jobs:
       - name: Configure AWS Credentials via OIDC Workload Identity Federation
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
           audience: sts.amazonaws.com
+          # Redact the account ID from logs: AWS error messages embed it in ARNs,
+          # and this repository's Actions logs are public.
+          mask-aws-account-id: true
 
       - name: Check Terraform Formatting
         run: terraform fmt -check
@@ -103,9 +106,12 @@ jobs:
       - name: Configure AWS Credentials via OIDC Workload Identity Federation
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
           audience: sts.amazonaws.com
+          # Redact the account ID from logs: AWS error messages embed it in ARNs,
+          # and this repository's Actions logs are public.
+          mask-aws-account-id: true
 
       # The state bucket name embeds the AWS account ID, so it is a masked secret
       # rather than a variable — `run:` commands are echoed verbatim into logs.
@@ -159,4 +165,3 @@ jobs:
           working-directory: terraform/aws
           output-file: docs/architecture-aws.svg
           provider-name: "AWS"
-

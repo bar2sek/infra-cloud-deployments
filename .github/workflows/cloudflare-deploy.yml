@@ -47,9 +47,10 @@ jobs:
       - name: Configure AWS Credentials via OIDC (for S3 State Backend)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
           audience: sts.amazonaws.com
+          mask-aws-account-id: true
 
       - name: Check Terraform Formatting
         run: terraform fmt -check
@@ -68,7 +69,7 @@ jobs:
           TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
-          TF_VAR_destination_email: ${{ vars.CLOUDFLARE_DESTINATION_EMAIL }}
+          TF_VAR_destination_email: ${{ secrets.CLOUDFLARE_DESTINATION_EMAIL }}
           TF_VAR_entra_client_id: ${{ vars.ENTRA_CLIENT_ID }}
           TF_VAR_entra_client_secret: ${{ secrets.ENTRA_CLIENT_SECRET }}
           TF_VAR_entra_tenant_id: ${{ vars.ENTRA_TENANT_ID }}
@@ -108,9 +109,10 @@ jobs:
       - name: Configure AWS Credentials via OIDC (for S3 State Backend)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
           audience: sts.amazonaws.com
+          mask-aws-account-id: true
 
       # The state bucket name embeds the AWS account ID, so it is a masked secret
       # rather than a variable — `run:` commands are echoed verbatim into logs.
@@ -122,7 +124,7 @@ jobs:
           TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
-          TF_VAR_destination_email: ${{ vars.CLOUDFLARE_DESTINATION_EMAIL }}
+          TF_VAR_destination_email: ${{ secrets.CLOUDFLARE_DESTINATION_EMAIL }}
           TF_VAR_entra_client_id: ${{ vars.ENTRA_CLIENT_ID }}
           TF_VAR_entra_client_secret: ${{ secrets.ENTRA_CLIENT_SECRET }}
           TF_VAR_entra_tenant_id: ${{ vars.ENTRA_TENANT_ID }}
@@ -134,4 +136,3 @@ jobs:
           working-directory: terraform/cloudflare
           output-file: docs/architecture-cloudflare.svg
           provider-name: "Cloudflare"
-

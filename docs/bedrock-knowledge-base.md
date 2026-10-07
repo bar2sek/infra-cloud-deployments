@@ -147,7 +147,7 @@ aws bedrock-agent-runtime retrieve-and-generate --region us-east-2 \
 
 Expected: up to 20 working days in a 12-month period with manager approval, citing `remote-work-policy.md`.
 
-**3. A question the corpus can't answer**, for example "What is the dress code?". A well-grounded RAG system should say it doesn't know rather than invent a policy. Milestone 4 (Guardrails) adds **contextual grounding checks** to enforce this.
+**3. A question the corpus can't answer**, for example "What is the dress code?". A well-grounded RAG system should say it doesn't know rather than invent a policy. The [[bedrock-guardrail|Bedrock Guardrail]] adds **contextual grounding checks** to enforce this.
 
 ---
 
@@ -172,6 +172,8 @@ Expected: up to 20 working days in a 12-month period with manager approval, citi
 | Ingestion `FAILED` with AccessDenied | The KB role hit the **boundary**: bucket or index name doesn't match `s3-aws-bedrock-*` / `s3v-aws-bedrock-*` | Fix the names; check `failureReasons` in the job log |
 | Ingestion fails on metadata size | Filterable metadata over the per-vector limit | Keep `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA` non-filterable; avoid hierarchical chunking with large parent chunks |
 | `$(terraform output -raw …)` returns garbage in CI | `setup-terraform` wrapper echoes extra lines | `terraform_wrapper: false` on the apply job (already set) |
+| `StartIngestionJob` fails: "Your account is currently being verified" | New AWS account still under verification hold for Bedrock | Wait (usually under 2 hours), then `gh run rerun <id> --failed`. If it lasts longer, check payment and contact details or contact AWS Support |
+| `StartIngestionJob` `ValidationException`: KB role "is not able to call" the embedding model … `429 Too many requests` | Bedrock checks the model with the KB role before starting, and was throttled. On new accounts the on-demand quotas for the embedding model can start very low, or at 0 | Check the Service Quotas console (Amazon Bedrock → "On-demand model inference requests/tokens per minute" for Titan Text Embeddings V2). If the applied value is 0 or tiny, request an increase or open a Support case; otherwise wait a few minutes and re-run |
 | Retrieve returns nothing | Ingestion hasn't run, or ran before the files were synced | Check the "Sync Bedrock Knowledge Base Corpus & Ingest" step's statistics table |
 
 > [!WARNING] Tear-down is a human action

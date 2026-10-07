@@ -19,4 +19,5 @@ locals {
   iam_role_bedrock_kb          = "role-${var.platform}-bedrock-kb-${var.env}-admin"
   bedrock_embedding_model_arn  = "arn:aws:bedrock:${var.aws_region}::foundation-model/amazon.titan-embed-text-v2:0"
   bedrock_embedding_dimensions = 1024
+  bedrock_guardrail_name       = "gr-${var.platform}-company-handbook-${var.env}-${var.region_code}-${var.iteration}"
 }
