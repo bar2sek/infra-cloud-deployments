@@ -12,3 +12,18 @@ output "eks_connector_role_arn" {
   description = "AWS EKS Connector IAM Role ARN"
   value       = aws_iam_role.eks_connector.arn
 }
+
+output "bedrock_kb_id" {
+  description = "Bedrock Knowledge Base ID (used by the CI ingestion step and Retrieve calls)"
+  value       = aws_bedrockagent_knowledge_base.company_handbook.id
+}
+
+output "bedrock_kb_data_source_id" {
+  description = "Bedrock Knowledge Base S3 data source ID"
+  value       = aws_bedrockagent_data_source.company_handbook.data_source_id
+}
+
+output "bedrock_docs_bucket_name" {
+  description = "S3 bucket the CI apply job syncs kb-corpus/ into"
+  value       = aws_s3_bucket.bedrock_docs.bucket
+}
