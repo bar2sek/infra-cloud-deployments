@@ -96,6 +96,9 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.10.5
+          # The wrapper echoes extra lines to stdout, which corrupts
+          # $(terraform output -raw ...) in the Knowledge Base sync step.
+          terraform_wrapper: false
 
       - name: Configure AWS Credentials via OIDC Workload Identity Federation
         uses: aws-actions/configure-aws-credentials@v4
@@ -111,6 +114,44 @@ jobs:
 
       - name: Apply Infrastructure Changes
         run: terraform apply -auto-approve
+
+      # Ingestion is a runtime operation, not a Terraform resource. Git is the
+      # source of truth for the corpus: `sync --delete` mirrors kb-corpus/ exactly,
+      # and the ingestion job is incremental (only changed files are re-embedded).
+      - name: Sync Bedrock Knowledge Base Corpus & Ingest
+        run: |
+          set -euo pipefail
+          BUCKET=$(terraform output -raw bedrock_docs_bucket_name)
+          KB_ID=$(terraform output -raw bedrock_kb_id)
+          DS_ID=$(terraform output -raw bedrock_kb_data_source_id)
+
+          aws s3 sync kb-corpus/ "s3://${BUCKET}/" --delete --only-show-errors
+
+          JOB_ID=$(aws bedrock-agent start-ingestion-job \
+            --knowledge-base-id "$KB_ID" --data-source-id "$DS_ID" \
+            --query ingestionJob.ingestionJobId --output text)
+          echo "Ingestion job: ${JOB_ID}"
+
+          for _ in $(seq 1 60); do
+            STATUS=$(aws bedrock-agent get-ingestion-job \
+              --knowledge-base-id "$KB_ID" --data-source-id "$DS_ID" --ingestion-job-id "$JOB_ID" \
+              --query ingestionJob.status --output text)
+            case "$STATUS" in
+              COMPLETE)
+                aws bedrock-agent get-ingestion-job \
+                  --knowledge-base-id "$KB_ID" --data-source-id "$DS_ID" --ingestion-job-id "$JOB_ID" \
+                  --query ingestionJob.statistics --output table
+                exit 0 ;;
+              FAILED|STOPPED)
+                aws bedrock-agent get-ingestion-job \
+                  --knowledge-base-id "$KB_ID" --data-source-id "$DS_ID" --ingestion-job-id "$JOB_ID" \
+                  --query ingestionJob.failureReasons --output text
+                exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "Ingestion did not finish within 10 minutes" >&2
+          exit 1
 
       - name: Generate Topology Diagram (workflow artifact)
         uses: ./.github/actions/generate-diagram

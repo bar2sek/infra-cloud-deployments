@@ -41,6 +41,8 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │   │   ├── providers.tf            # AWS provider, S3 backend & native S3 lockfile
 │   │   ├── locals.tf               # Canonical resource naming convention
 │   │   ├── main.tf                 # S3 backup bucket (+ lifecycle) & EKS connector IAM role
+│   │   ├── bedrock-kb.tf           # Bedrock Knowledge Base on S3 Vectors (RAG)
+│   │   ├── kb-corpus/              # Synthetic policy handbook, synced to S3 by CI after apply
 │   │   ├── variables.tf            # Input variable definitions
 │   │   ├── outputs.tf              # Resource outputs
 │   │   └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
@@ -52,6 +54,7 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │       ├── outputs.tf              # Tunnel ID & token outputs
 │       └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
 ├── docs/                           # Automated architecture diagrams & documentation
+│   ├── bedrock-knowledge-base.md   # Bedrock KB design, IAM layering, test & troubleshooting runbook
 │   ├── architecture-aws.svg        # Auto-generated AWS topology
 │   ├── architecture-azure.svg      # Auto-generated Azure topology
 │   └── architecture-cloudflare.svg # Auto-generated Cloudflare topology
@@ -79,6 +82,8 @@ These topology diagrams are **generated on every plan and deployment** by GitHub
 ### 1. Amazon Web Services (AWS)
 ![AWS Architecture](docs/architecture-aws.png)
 *Vector source:* [`docs/architecture-aws.svg`](docs/architecture-aws.svg)
+
+**Amazon Bedrock Knowledge Base** — managed RAG over a synthetic policy handbook, stored in S3 Vectors, deployed and ingested entirely by this pipeline. Design, IAM layering, and test commands: [docs/bedrock-knowledge-base.md](docs/bedrock-knowledge-base.md).
 
 ### 2. Microsoft Azure
 ![Azure Architecture](docs/architecture-azure.png)

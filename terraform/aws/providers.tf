@@ -8,6 +8,10 @@ terraform {
       # S3 Vectors storage (S3_VECTORS). The exact version is pinned by the lock file.
       version = "~> 6.27"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.13"
+    }
   }
 
   # Partial backend configuration.
