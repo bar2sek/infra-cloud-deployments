@@ -3,8 +3,10 @@ terraform {
 
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source = "hashicorp/aws"
+      # 6.27.0 is the first release where aws_bedrockagent_knowledge_base supports
+      # S3 Vectors storage (S3_VECTORS). The exact version is pinned by the lock file.
+      version = "~> 6.27"
     }
   }
 
