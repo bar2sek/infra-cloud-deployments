@@ -15,7 +15,7 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
    * Entra ID mints a short-lived OAuth access token scoped strictly to the authorized permissions of `sp-azure-github-actions-prod-001`.
 3. **Ephemeral Identity Minting (AWS)**:
    * The same GitHub-issued JWT is exchanged with AWS STS via `aws-actions/configure-aws-credentials`.
-   * AWS validates the token against the GitHub OIDC identity provider and assumes the role referenced by the `AWS_ROLE_TO_ASSUME` environment variable, returning temporary STS credentials.
+   * AWS validates the token against the GitHub OIDC identity provider and assumes the role referenced by the `AWS_ROLE_TO_ASSUME` secret, returning temporary STS credentials.
 4. **Auditability & Traceability**:
    * Every Azure resource modification links directly to the specific GitHub Actions execution, pull request ID, and Git commit hash in Azure Activity Logs.
    * AWS resources carry `default_tags` (`Environment`, `ManagedBy = github-actions`, `Repository`) so every object traces back to this pipeline, with API-level attribution in CloudTrail.
@@ -165,12 +165,15 @@ Values are published at **two scopes**, because GitHub resolves lookups with pre
 | `AZURE_CLIENT_ID` | Variable | Identifier, not a credential — useless without a matching federated credential |
 | `AZURE_TENANT_ID` | Variable | As above |
 | `AZURE_SUBSCRIPTION_ID` | Variable | As above |
-| `AWS_ROLE_TO_ASSUME` | Variable | An ARN grants nothing without a matching IAM trust policy |
+| `AWS_ROLE_TO_ASSUME` | **Secret** | An ARN grants nothing on its own, but it embeds the AWS account ID, and Actions prints step inputs verbatim into the public logs |
 | `AWS_REGION` | Variable | Non-sensitive |
 | `AWS_TF_STATE_BUCKET` | **Secret** | Embeds the AWS account ID and is interpolated into a `run:` command, which Actions echoes verbatim into logs. A secret is masked to `***`; a variable is not. |
+| `CLOUDFLARE_DESTINATION_EMAIL` | **Secret** | Personal email address (PII) |
 
 > [!NOTE]
-> Under OIDC there is no static credential to protect, which is why the identifiers above are variables rather than secrets. Keeping them readable also lets Terraform detect drift — `github_actions_secret` is write-only, so Terraform tracks a hash and cannot see out-of-band edits made in the GitHub UI.
+> Under OIDC there is no static credential to protect, so access is not the deciding factor. **Log exposure is:** this repository's Actions logs are public, and Actions prints step inputs and `run:` commands with values expanded. Anything that embeds the AWS account ID or personal data is a secret; other identifiers stay variables, which keeps them readable and lets Terraform detect drift (`github_actions_secret` is write-only, so Terraform tracks a hash and cannot see out-of-band edits made in the GitHub UI).
+>
+> As a second layer, both AWS credential steps set `mask-aws-account-id: true`, which masks the account ID in any later output, such as ARNs in Terraform plans and AWS error messages.
 
 ---
 

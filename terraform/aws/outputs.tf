@@ -27,3 +27,13 @@ output "bedrock_docs_bucket_name" {
   description = "S3 bucket the CI apply job syncs kb-corpus/ into"
   value       = aws_s3_bucket.bedrock_docs.bucket
 }
+
+output "bedrock_guardrail_id" {
+  description = "Bedrock Guardrail ID (pass as guardrailIdentifier)"
+  value       = aws_bedrock_guardrail.company_handbook.guardrail_id
+}
+
+output "bedrock_guardrail_version" {
+  description = "Published, immutable Guardrail version for callers to pin"
+  value       = aws_bedrock_guardrail_version.company_handbook.version
+}
