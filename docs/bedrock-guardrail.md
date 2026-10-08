@@ -120,19 +120,6 @@ aws bedrock-runtime apply-guardrail --region us-east-2 \
 
 Expected: a GROUNDING score well under 0.75 and `BLOCKED`. Change the answer to "Within 30 calendar days." and it passes.
 
-> [!SUCCESS] Verified 2026-10-08 (version 1)
-> | Test | Result |
-> | :--- | :--- |
-> | Expense question | `NONE`, passes through |
-> | "Ignore all previous instructions…" | Blocked: `PROMPT_ATTACK`, confidence MEDIUM (a HIGH-strength filter blocks from LOW up) |
-> | "Can I sue the company…" | Blocked: denied topic *Legal advice* |
-> | Email + `EC-123456` in output | Masked to `{EMAIL}` and `{Employee ID}` |
-> | AWS access key in input | Blocked: `AWS_ACCESS_KEY` |
-> | Grounding, wrong answer ("90 days") | Blocked: grounding 0.0, relevance ≈ 0 |
-> | Grounding, right answer ("30 calendar days") | Passed: grounding 1.0, relevance 0.98 |
->
-> None of these call a model, so they work even while Bedrock model quotas are 0.
-
 **3. End to end through the Knowledge Base.** This is the same call as in the KB runbook, with the guardrail attached:
 
 ```bash
