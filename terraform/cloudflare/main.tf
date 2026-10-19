@@ -140,6 +140,11 @@ resource "cloudflare_zero_trust_access_application" "apps" {
   domain           = "${each.value.subdomain}.${var.domain_name}"
   type             = "self_hosted"
   session_duration = each.value.session_duration
+
+  # Offer only Entra ID: an empty list means "every account login method",
+  # which includes the email one-time PIN (inbox access alone, no MFA).
+  allowed_idps              = [local.access_idp_entra_id]
+  auto_redirect_to_identity = true
 }
 
 resource "cloudflare_zero_trust_access_policy" "apps_policy" {
@@ -152,6 +157,17 @@ resource "cloudflare_zero_trust_access_policy" "apps_policy" {
 
   include {
     email = [var.destination_email]
+  }
+
+  # Every require rule must match. The identity must come from Entra ID, and
+  # Entra must report MFA in the token's `amr` claim (RFC 8176). A sign-in
+  # without MFA is rejected, even when Entra itself accepted it.
+  require {
+    login_method = [local.access_idp_entra_id]
+  }
+
+  require {
+    auth_method = "mfa"
   }
 }
 
