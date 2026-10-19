@@ -15,12 +15,11 @@ Every homelab hostname published through the Cloudflare Tunnel sits behind a Clo
 
 ## Policy model
 
-Each app allows exactly one login method, Microsoft Entra ID. Each app's policy needs all three of these rules to match:
+Each app allows exactly one login method, Microsoft Entra ID. Each app's policy needs both of these rules to match:
 
 | Rule | Selector | Purpose |
 | :--- | :--- | :--- |
 | `include` | `email = [var.destination_email]` | Only the homelab admin identity |
-| `require` | `login_method = [Entra ID IdP]` | The identity must come from Entra ID |
 | `require` | `auth_method = "mfa"` | Entra must report MFA in the token's `amr` claim (RFC 8176) |
 
 On the application, `allowed_idps = [Entra ID IdP]` hides every other account login method. `auto_redirect_to_identity` is `false`, so Access first shows its own login page with a single Microsoft Entra button. Set it to `true` to skip that page and go straight to Microsoft.
@@ -30,7 +29,7 @@ graph LR
     U["Browser"] --> CF["Cloudflare Access"]
     CF -->|"Entra button"| E["Entra ID (MFA)"]
     E -->|"id_token with amr"| CF
-    CF -->|"email + Entra + amr=mfa"| T["Tunnel → app"]
+    CF -->|"email + amr=mfa"| T["Tunnel → app"]
     G["Grafana server"] -->|"bypass: /application/o/token, /userinfo"| A["Authentik"]
 ```
 
@@ -39,7 +38,10 @@ graph LR
 
 ### Why `require` and not only `allowed_idps`
 
-`allowed_idps` controls which buttons the login page shows. The `require` rules are what the policy actually enforces. `login_method` rejects a session minted by any other IdP. `auth_method = "mfa"` fails closed: if Entra accepts a sign-in without MFA, for example a password-only sign-in, Access still denies it. Under Entra Security Defaults, MFA is required "when necessary", not on every sign-in, so this check is what guarantees MFA for every Access session.
+`allowed_idps` limits which login methods can sign in to the app. The `require` rule is what makes MFA mandatory. `auth_method = "mfa"` fails closed: if Entra accepts a sign-in without MFA, for example a password-only sign-in, Access still denies it. Under Entra Security Defaults, MFA is required "when necessary", not on every sign-in, so this check is what guarantees MFA for every Access session. It also rejects an email one-time PIN session, which carries no MFA, so the PIN stays useless even if `allowed_idps` were emptied by mistake.
+
+> [!NOTE]
+> A `require { login_method = [Entra ID IdP] }` rule was also applied on 2026-10-19. The API accepted it but did not store it, and every later plan tried to add it again. The cause is unconfirmed. A likely factor is that the CI token cannot see account-level login methods. The rule was removed from code. It added nothing beyond `allowed_idps` and the MFA rule.
 
 ## Back-channel bypass (unchanged)
 
@@ -73,5 +75,5 @@ All checks passed on 2026-10-19 after the PR 8 apply, which used `auto_redirect_
 - **"You don't have access" after a successful Microsoft login.** The token most likely had no `mfa` in `amr` (Entra skipped MFA), or the email didn't match. After a successful login, `https://<host>/cdn-cgi/access/get-identity` shows the `amr` and `idp` values Access recorded.
 - **Locked out from outside the LAN.** LAN and Tailscale clients reach the services directly through split-horizon DNS. Revert the policy change through a PR, or temporarily edit the policy in the Zero Trust dashboard; the next apply will overwrite that edit.
 - **Entra IdP recreated.** The IdP gets a new ID. Update `local.access_idp_entra_id`, or every app rejects logins.
-- **Every plan shows the policies "changing", with `auth_method` moving between `require` blocks.** The API returns all require rules as one block. Declare them in a single `require` block, as `main.tf` does. Two separate blocks produce this diff forever, even though the live rules are correct.
+- **Every plan shows the policies "changing" (`require` rules).** The v4 provider reads all require rules back as one block, so declare them in a single `require` block. If a rule keeps reappearing as `+`, check the live policy (`GET /zones/<zone>/access/apps/<app>/policies`). The API may be dropping it, as it did with `login_method`.
 - **The VS Code Terraform extension flags `require`/`allowed_idps`.** The language server uses the v5 provider schema. This root pins v4 (`~> 4.0`), and `terraform validate` is the source of truth.

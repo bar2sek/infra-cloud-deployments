@@ -159,15 +159,13 @@ resource "cloudflare_zero_trust_access_policy" "apps_policy" {
     email = [var.destination_email]
   }
 
-  # Every require rule must match. The identity must come from Entra ID, and
   # Entra must report MFA in the token's `amr` claim (RFC 8176). A sign-in
   # without MFA is rejected, even when Entra itself accepted it.
-  # Keep both in ONE block: the provider sends each attribute as a separate
-  # rule, and the API returns them as a single block. Two blocks here show a
-  # permanent diff on every plan.
+  # No `login_method` rule: the API accepts it but silently drops it (cause
+  # unconfirmed), which leaves a permanent plan diff. `allowed_idps` above
+  # already limits sign-in to Entra ID.
   require {
-    login_method = [local.access_idp_entra_id]
-    auth_method  = "mfa"
+    auth_method = "mfa"
   }
 }
 
