@@ -144,7 +144,7 @@ resource "cloudflare_zero_trust_access_application" "apps" {
   # Offer only Entra ID: an empty list means "every account login method",
   # which includes the email one-time PIN (inbox access alone, no MFA).
   allowed_idps              = [local.access_idp_entra_id]
-  auto_redirect_to_identity = true
+  auto_redirect_to_identity = false
 }
 
 resource "cloudflare_zero_trust_access_policy" "apps_policy" {

@@ -49,13 +49,14 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │   │   └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
 │   └── cloudflare/                 # Cloudflare Zero Trust Tunnels, DNS & Access SSO
 │       ├── providers.tf            # Cloudflare provider & S3 backend with native S3 locking
-│       ├── locals.tf               # Tunnel naming convention
+│       ├── locals.tf               # Tunnel naming, Access apps & Entra IdP ID
 │       ├── main.tf                 # Zero Trust Tunnels, Ingress routing, DNS, Access SSO
 │       ├── variables.tf            # Input variable definitions
 │       ├── outputs.tf              # Tunnel ID & token outputs
 │       └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
 ├── docs/                           # Automated architecture diagrams & documentation
 │   ├── bedrock-knowledge-base.md   # Bedrock KB design, IAM layering, test & troubleshooting runbook
+│   ├── cloudflare-access.md        # Access policy model: Entra-only login, enforced MFA, verification
 │   ├── architecture-aws.svg        # Auto-generated AWS topology
 │   ├── architecture-azure.svg      # Auto-generated Azure topology
 │   └── architecture-cloudflare.svg # Auto-generated Cloudflare topology
@@ -93,6 +94,8 @@ These topology diagrams are **generated on every plan and deployment** by GitHub
 ### 3. Cloudflare Zero Trust & Ingress Routing
 ![Cloudflare Architecture](docs/architecture-cloudflare.png)
 *Vector source:* [`docs/architecture-cloudflare.svg`](docs/architecture-cloudflare.svg)
+
+**Cloudflare Access** — every tunneled hostname requires a Microsoft Entra ID login with MFA (`amr=mfa`); the email one-time PIN is disabled per app. Policy model, verification probes, and troubleshooting: [docs/cloudflare-access.md](docs/cloudflare-access.md).
 
 
 
