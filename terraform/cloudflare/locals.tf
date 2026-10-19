@@ -2,6 +2,11 @@ locals {
   # Pattern: tunnel-<platform>-homelab-<env>-<region-code>-<iteration>
   tunnel_name = "tunnel-${var.platform}-homelab-${var.env}-${var.region_code}-${var.iteration}"
 
+  # Microsoft Entra ID login method for Access. Created in the Zero Trust
+  # dashboard (the CI API token cannot manage account IdPs, see main.tf §5).
+  # Not a secret: the ID appears in every Access login redirect.
+  access_idp_entra_id = "c85875c7-a031-4b14-8b75-b61ecb8f2dbd"
+
   # Applications protected by Cloudflare Zero Trust Access
   access_apps = {
     tesla = {

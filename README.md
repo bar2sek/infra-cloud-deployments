@@ -26,6 +26,7 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 
 ```
 .
+├── Justfile                        # Local init/validate/plan (no apply: CI owns it); keeps .terraform/ out of the vault
 ├── .github/
 │   └── workflows/
 │       ├── azure-deploy.yml        # Azure CI/CD pipeline (Lint, Plan, Apply)
@@ -128,6 +129,12 @@ State is **never** stored locally or committed to Git.
 
 ---
 
+## 🧰 Running Terraform Locally
+
+Use the Justfile from the repo root: `just tf-init <provider>`, `just tf-plan <provider>` (always `-lock=false`, so it never blocks a CI apply), `just tf <provider> <subcommand>`. It sets `TF_DATA_DIR` to `~/.terraform-data/infra-cloud-deployments/<provider>` and shares provider binaries through `TF_PLUGIN_CACHE_DIR` (`~/.terraform.d/plugin-cache`), so no `.terraform/` directory is created inside the Google Drive–synced vault (check: `find . -name .terraform` prints nothing). It passes `-backend-config=backend.hcl` automatically and re-runs `init` whenever the data dir is missing or was initialised without a backend. Needs a live `aws login` session (`AWS_PROFILE` defaults to `terraform`).
+
+---
+
 ## 📌 Provider Versions & Upgrades
 
 `providers.tf` sets the allowed range; the committed `.terraform.lock.hcl` pins the **exact** version and its checksums, so CI and laptops always run the same provider binary.
@@ -139,14 +146,13 @@ State is **never** stored locally or committed to Git.
 **Major-version upgrades ship alone**, in their own PR, before any feature that needs them. The PR plan must show `No changes`; if a later feature PR misbehaves, the upgrade is already ruled out.
 
 ```bash
-cd terraform/aws
-export TF_DATA_DIR=/tmp/tfdata-aws          # keep provider binaries out of the synced vault
+# The Justfile keeps TF_DATA_DIR outside the synced vault and passes backend.hcl.
 eval "$(aws configure export-credentials --format env)"
-terraform init -upgrade -backend-config=backend.hcl
+just tf-init aws -upgrade
 # Record checksums for BOTH the macOS laptop and the Linux CI runners; a lock
 # file with only one platform's hashes fails `terraform init` on the other.
-terraform providers lock -platform=darwin_arm64 -platform=linux_amd64
-terraform plan -lock=false                  # expect: No changes
+just tf aws providers lock -platform=darwin_arm64 -platform=linux_amd64
+just tf-plan aws                            # runs with -lock=false; expect: No changes
 ```
 
 ---
