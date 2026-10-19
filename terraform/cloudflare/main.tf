@@ -144,7 +144,7 @@ resource "cloudflare_zero_trust_access_application" "apps" {
   # Offer only Entra ID: an empty list means "every account login method",
   # which includes the email one-time PIN (inbox access alone, no MFA).
   allowed_idps              = [local.access_idp_entra_id]
-  auto_redirect_to_identity = true
+  auto_redirect_to_identity = false
 }
 
 resource "cloudflare_zero_trust_access_policy" "apps_policy" {
@@ -159,13 +159,11 @@ resource "cloudflare_zero_trust_access_policy" "apps_policy" {
     email = [var.destination_email]
   }
 
-  # Every require rule must match. The identity must come from Entra ID, and
   # Entra must report MFA in the token's `amr` claim (RFC 8176). A sign-in
   # without MFA is rejected, even when Entra itself accepted it.
-  require {
-    login_method = [local.access_idp_entra_id]
-  }
-
+  # No `login_method` rule: the API accepts it but silently drops it (cause
+  # unconfirmed), which leaves a permanent plan diff. `allowed_idps` above
+  # already limits sign-in to Entra ID.
   require {
     auth_method = "mfa"
   }
