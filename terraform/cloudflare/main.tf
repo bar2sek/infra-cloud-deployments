@@ -43,6 +43,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab_tunnel_confi
       }
     }
     ingress_rule {
+      hostname = "nas.${var.domain_name}"
+      service  = "https://10.0.1.223:5001" # Synology DSM (self-signed cert)
+      origin_request {
+        no_tls_verify = true
+      }
+    }
+    ingress_rule {
       hostname = "ceph.${var.domain_name}"
       service  = "https://ingress-nginx-controller.ingress-nginx.svc.cluster.local:443"
       origin_request {
@@ -100,6 +107,14 @@ resource "cloudflare_record" "grafana_dns" {
 resource "cloudflare_record" "omni_dns" {
   zone_id = var.cloudflare_zone_id
   name    = "omni"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
+  type    = "CNAME"
+  proxied = true
+}
+
+resource "cloudflare_record" "nas_dns" {
+  zone_id = var.cloudflare_zone_id
+  name    = "nas"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.homelab_tunnel.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
