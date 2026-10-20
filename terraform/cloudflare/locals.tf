@@ -29,6 +29,11 @@ locals {
       subdomain        = "ceph"
       session_duration = "12h"
     }
+    nas = {
+      name             = "Synology NAS"
+      subdomain        = "nas"
+      session_duration = "12h"
+    }
     finance = {
       name             = "Actual Budget"
       subdomain        = "finance"
