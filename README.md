@@ -42,8 +42,7 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │   │   ├── providers.tf            # AWS provider, S3 backend & native S3 lockfile
 │   │   ├── locals.tf               # Canonical resource naming convention
 │   │   ├── main.tf                 # S3 backup bucket (+ lifecycle) & EKS connector IAM role
-│   │   ├── bedrock-kb.tf           # Bedrock Knowledge Base on S3 Vectors (RAG)
-│   │   ├── kb-corpus/              # Synthetic policy handbook, synced to S3 by CI after apply
+│   │   ├── bedrock-decommission.tf # removed{} blocks for the retired Bedrock buckets (temporary)
 │   │   ├── variables.tf            # Input variable definitions
 │   │   ├── outputs.tf              # Resource outputs
 │   │   └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
@@ -55,7 +54,7 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │       ├── outputs.tf              # Tunnel ID & token outputs
 │       └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
 ├── docs/                           # Automated architecture diagrams & documentation
-│   ├── bedrock-knowledge-base.md   # Bedrock KB design, IAM layering, test & troubleshooting runbook
+│   ├── bedrock-knowledge-base.md   # Archived: retired Bedrock KB design (historical)
 │   ├── cloudflare-access.md        # Access policy model: Entra-only login, enforced MFA, verification
 │   ├── architecture-aws.svg        # Auto-generated AWS topology
 │   ├── architecture-azure.svg      # Auto-generated Azure topology
@@ -85,7 +84,7 @@ These topology diagrams are **generated on every plan and deployment** by GitHub
 ![AWS Architecture](docs/architecture-aws.png)
 *Vector source:* [`docs/architecture-aws.svg`](docs/architecture-aws.svg)
 
-**Amazon Bedrock Knowledge Base** — managed RAG over a synthetic policy handbook, stored in S3 Vectors, deployed and ingested entirely by this pipeline. Design, IAM layering, and test commands: [docs/bedrock-knowledge-base.md](docs/bedrock-knowledge-base.md).
+**Amazon Bedrock Knowledge Base:** retired 2026-11-09. The archived design is in [docs/bedrock-knowledge-base.md](docs/bedrock-knowledge-base.md) and [docs/bedrock-guardrail.md](docs/bedrock-guardrail.md).
 
 ### 2. Microsoft Azure
 ![Azure Architecture](docs/architecture-azure.png)
@@ -144,7 +143,7 @@ Use the Justfile from the repo root: `just tf-init <provider>`, `just tf-plan <p
 
 | Plane | Constraint | Why |
 | :--- | :--- | :--- |
-| AWS | `~> 6.27` | 6.27.0 added S3 Vectors storage for Bedrock Knowledge Bases |
+| AWS | `~> 6.27` | Originally pinned for S3 Vectors in Bedrock Knowledge Bases (retired); kept to avoid an unrelated provider change |
 
 **Major-version upgrades ship alone**, in their own PR, before any feature that needs them. The PR plan must show `No changes`; if a later feature PR misbehaves, the upgrade is already ruled out.
 
