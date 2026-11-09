@@ -6,13 +6,16 @@ tags:
   - aws/genai
   - terraform
   - security/iam
-status: in-progress
+status: archive
 aliases:
   - Bedrock Knowledge Base
   - Bedrock KB runbook
 ---
 
 # 🧠 Amazon Bedrock Knowledge Base on S3 Vectors
+
+> [!WARNING] Archived (2026-11-09): decommissioned
+> The Bedrock lab was retired: it was a one-off lab and is no longer used. The Terraform was removed (`terraform/aws/bedrock-decommission.tf` explains the bucket handling), and the gateway stack that called it (`bedrock-ai-gateway`) was deleted. Removal runbook: `personal-technology` repo, `docs/413-bedrock-ai-gateway-decommission.md`. Kept as a historical record of the design.
 
 > [!abstract] What this is
 > A managed **retrieval-augmented generation (RAG)** pipeline, built entirely with Terraform and GitHub Actions. A synthetic company policy handbook (`terraform/aws/kb-corpus/`) is embedded with **Amazon Titan Text Embeddings V2**, stored in an **Amazon S3 Vectors** index, and queried through a **Bedrock Knowledge Base**. Answers come back grounded in those documents, with citations.

@@ -6,13 +6,16 @@ tags:
   - aws/genai
   - terraform
   - security/ai-safety
-status: in-progress
+status: archive
 aliases:
   - Bedrock Guardrail
   - Bedrock Guardrail runbook
 ---
 
 # 🛡️ Amazon Bedrock Guardrail
+
+> [!WARNING] Archived (2026-11-09): decommissioned
+> The Bedrock lab was retired: it was a one-off lab and is no longer used. The Terraform was removed (`terraform/aws/bedrock-decommission.tf` explains the bucket handling), and the gateway stack that called it (`bedrock-ai-gateway`) was deleted. Removal runbook: `personal-technology` repo, `docs/413-bedrock-ai-gateway-decommission.md`. Kept as a historical record of the design.
 
 > [!abstract] What this is
 > A **policy layer** around the company-handbook RAG assistant ([[bedrock-knowledge-base|Bedrock Knowledge Base]]). It is defined in `terraform/aws/bedrock-guardrail.tf` and applied by CI. The guardrail screens the user's prompt before any model runs and screens the model's answer before it is returned. The same policy works with any Bedrock model and can also be called on its own through `ApplyGuardrail`.
