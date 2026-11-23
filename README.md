@@ -44,7 +44,6 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 │   │   ├── providers.tf            # AWS provider, S3 backend & native S3 lockfile
 │   │   ├── locals.tf               # Canonical resource naming convention
 │   │   ├── main.tf                 # S3 backup bucket (+ lifecycle) & EKS connector IAM role
-│   │   ├── bedrock-decommission.tf # removed{} blocks for the retired Bedrock buckets (temporary)
 │   │   ├── variables.tf            # Input variable definitions
 │   │   ├── outputs.tf              # Resource outputs
 │   │   └── .terraform.lock.hcl     # Pinned provider checksums (tracked)
@@ -149,7 +148,7 @@ Use the Justfile from the repo root: `just tf-init <provider>`, `just tf-plan <p
 
 | Plane | Constraint | Why |
 | :--- | :--- | :--- |
-| AWS | `~> 6.27` | Originally pinned for S3 Vectors in Bedrock Knowledge Bases (retired); kept to avoid an unrelated provider change |
+| AWS | `~> 6.27` | Floor set when Bedrock Knowledge Bases needed S3 Vectors (retired 2026-11-09); kept to avoid an unrelated provider change |
 | Azure (`azurerm`) | `~> 4.0` (Terraform `>= 1.10.0`, CI pins 1.10.5) | 4.x baseline. `resource_provider_registrations = "none"`, because the Reader-only plan identity can't register resource providers |
 
 **Major-version upgrades ship alone**, in their own PR, before any feature that needs them. The PR plan must show `No changes`; if a later feature PR misbehaves, the upgrade is already ruled out.
