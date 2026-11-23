@@ -11,8 +11,10 @@ This repository operates strictly on **OpenID Connect (OIDC) Workload Identity F
 1. **Zero Static Credentials**: No `ARM_CLIENT_SECRET`, AWS Access Keys, or permanent passwords are saved in GitHub Secrets.
 2. **Ephemeral Identity Minting (Azure)**:
    * Each workflow job requests a cryptographic JSON Web Token (JWT) directly from `token.actions.githubusercontent.com`.
-   * Microsoft Entra ID validates the signature and subject claim (`repo:bar2sek/infra-cloud-deployments:environment:production`).
-   * Entra ID mints a short-lived OAuth access token scoped strictly to the authorized permissions of `sp-azure-github-actions-prod-001`.
+   * Microsoft Entra ID validates the signature and the subject claim against one of two app registrations, so a pull request can never borrow apply rights:
+     * **Plan app** (`app-azure-github-actions-plan-prod-001`): subjects `…:pull_request` and `…:ref:refs/heads/main`. Reader on the landingzones and sandbox management groups, Storage Blob Data Reader on the state container.
+     * **Apply app** (`app-azure-github-actions-apply-prod-001`): subject `…:environment:production` only. Contributor on the same management groups, Storage Blob Data Contributor on the state container.
+   * Entra ID mints a short-lived OAuth access token for that app. Neither app holds any role on the platform management groups: platform and governance are applied by an admin, from the `personal-technology` bootstrap roots.
 3. **Ephemeral Identity Minting (AWS)**:
    * The same GitHub-issued JWT is exchanged with AWS STS via `aws-actions/configure-aws-credentials`.
    * AWS validates the token against the GitHub OIDC identity provider and assumes the role referenced by the `AWS_ROLE_TO_ASSUME` secret, returning temporary STS credentials.
@@ -110,9 +112,13 @@ All deployment pipelines (`azure-deploy.yml`, `aws-deploy.yml`, and `cloudflare-
   * State remains unmutated (read-only execution).
 * **Merge to Main (`push`)**:
   * Triggers the `production` GitHub Environment.
-  * Respects environment protection rules (manual approval gates, required branch policies).
+  * Waits for a **required reviewer** (the owner; admin bypass disabled), and only runs from protected branches. The approval is the second look between "merged" and "changed the cloud", because `main` needs a PR but 0 approvals.
+  * Applies are serialised per cloud with `concurrency` (`cancel-in-progress: false`), so a second merge queues instead of interrupting an apply.
   * Executes `terraform apply -auto-approve` to deploy changes.
   * Automatically records deployment history in GitHub Deployments dashboard.
+
+> [!NOTE]
+> **Azure is gated until a workload subscription exists.** The CI identities hold roles only on the landingzones and sandbox management groups, which contain no subscription yet (Phase 4). While the `AZURE_SUBSCRIPTION_ID` variable is unset, the Azure plan and apply jobs are skipped, and a **Deployment Target Check** job posts a notice explaining why. To enable Azure CI, set `azure_subscription_id` in `personal-technology` `bootstrap/github` and apply it.
 
 > [!IMPORTANT]
 > Never bypass the PR plan gate by pushing directly to `main`. The speculative plan is the only review surface between a code change and a mutated cloud resource.
@@ -126,7 +132,7 @@ State is **never** stored locally or committed to Git.
 | Plane | Backend | Locking |
 | :--- | :--- | :--- |
 | AWS (`terraform/aws/`) | S3 bucket, server-side encrypted, key `aws-workloads/terraform.tfstate` (`us-east-2`) | **Native S3 lockfile** (`use_lockfile = true`) |
-| Azure (`terraform/azure/`) | AzureRM Blob Storage container | Native blob lease |
+| Azure (`terraform/azure/`) | Blob container `tfstate` in `stazutfciprodcus001`, key `azure-workloads/terraform.tfstate`. Entra ID auth only (shared keys off). Data plane only: no resource group or subscription in the backend, so CI needs no management-plane role on the state account. | Native blob lease (apply only; PR plans run `-lock=false` with Blob Data Reader) |
 | Cloudflare (`terraform/cloudflare/`) | S3 bucket, server-side encrypted, key `cloudflare-workloads/terraform.tfstate` (`us-east-2`) | **Native S3 lockfile** (`use_lockfile = true`) |
 
 ---
@@ -144,6 +150,7 @@ Use the Justfile from the repo root: `just tf-init <provider>`, `just tf-plan <p
 | Plane | Constraint | Why |
 | :--- | :--- | :--- |
 | AWS | `~> 6.27` | Originally pinned for S3 Vectors in Bedrock Knowledge Bases (retired); kept to avoid an unrelated provider change |
+| Azure (`azurerm`) | `~> 4.0` (Terraform `>= 1.10.0`, CI pins 1.10.5) | 4.x baseline. `resource_provider_registrations = "none"`, because the Reader-only plan identity can't register resource providers |
 
 **Major-version upgrades ship alone**, in their own PR, before any feature that needs them. The PR plan must show `No changes`; if a later feature PR misbehaves, the upgrade is already ruled out.
 
@@ -170,9 +177,9 @@ Values are published at **two scopes**, because GitHub resolves lookups with pre
 
 | Name | Kind | Why |
 | :--- | :--- | :--- |
-| `AZURE_CLIENT_ID` | Variable | Identifier, not a credential — useless without a matching federated credential |
+| `AZURE_CLIENT_ID` | Variable | Identifier, not a credential: useless without a matching federated credential. **Differs by scope:** repo = plan app, `production` = apply app (same pattern as `AWS_ROLE_TO_ASSUME`) |
 | `AZURE_TENANT_ID` | Variable | As above |
-| `AZURE_SUBSCRIPTION_ID` | Variable | As above |
+| `AZURE_SUBSCRIPTION_ID` | Variable | The workload subscription. **Unset until Phase 4**, which keeps the Azure jobs skipped |
 | `AWS_ROLE_TO_ASSUME` | **Secret** | An ARN grants nothing on its own, but it embeds the AWS account ID, and Actions prints step inputs verbatim into the public logs |
 | `AWS_REGION` | Variable | Non-sensitive |
 | `AWS_TF_STATE_BUCKET` | **Secret** | Embeds the AWS account ID and is interpolated into a `run:` command, which Actions echoes verbatim into logs. A secret is masked to `***`; a variable is not. |
