@@ -23,13 +23,42 @@ permissions:
   id-token: write
   contents: read
 
+# Split plan/apply identities (personal-technology docs/418), same pattern as
+# AWS_ROLE_TO_ASSUME: one name, a different value per scope, and GitHub's
+# precedence (environment > repository) picks the right one per job.
+#   plan  job (no environment) -> repo-scope AZURE_CLIENT_ID = PLAN app.
+#         OIDC subject pull_request: Reader on landingzones + sandbox, Blob Data
+#         Reader on the CI state container. PR code runs in `plan`, so this
+#         identity must be harmless.
+#   apply job (environment: production, approval required) -> environment-scope
+#         AZURE_CLIENT_ID = APPLY app. Subject environment:production:
+#         Contributor on landingzones + sandbox, Blob Data Contributor on state.
+# Both values are managed by personal-technology bootstrap/github.
+# Terraform authenticates with OIDC itself (ARM_USE_OIDC), so no azure/login.
+#
+# Gate: CI holds roles only on workload MGs, and no workload subscription
+# exists until Phase 4. While vars.AZURE_SUBSCRIPTION_ID is unset, plan/apply
+# are skipped and the `target` job explains why.
+
 jobs:
+  # ----------------------------------------------------------------------------
+  # 0. Target check (explains skipped jobs until a workload subscription exists)
+  # ----------------------------------------------------------------------------
+  target:
+    name: "Deployment Target Check"
+    if: vars.AZURE_SUBSCRIPTION_ID == ''
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: No workload subscription configured
+        run: echo "::notice title=Azure deploy skipped::AZURE_SUBSCRIPTION_ID is not set. CI only has rights on the landingzones and sandbox management groups, and no workload subscription exists yet (Phase 4). Set the repo variable to enable plan and apply."
+
   # ----------------------------------------------------------------------------
   # 1. Validation & Speculative Plan (Runs on Pull Requests)
   # ----------------------------------------------------------------------------
   plan:
     name: "Terraform Plan (PR Validation)"
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.AZURE_SUBSCRIPTION_ID != ''
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -48,27 +77,22 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.7.0
-
-      - name: Azure Login via OIDC Workload Identity Federation
-        uses: azure/login@v2
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          terraform_version: 1.10.5
 
       - name: Check Terraform Formatting
         run: terraform fmt -check
 
-      - name: Initialize Terraform (Remote Backend with Azure AD Auth)
-        run: terraform init
+      - name: Initialize Terraform (Remote Backend, Entra ID data-plane auth)
+        run: terraform init -input=false
 
       - name: Validate Terraform Manifests
         run: terraform validate
 
+      # -lock=false: a lock is a blob lease (a write); the plan identity only
+      # has Blob Data Reader, and a speculative PR plan doesn't need one.
       - name: Generate Speculative Terraform Plan
         id: plan
-        run: terraform plan -no-color
+        run: terraform plan -lock=false -input=false -no-color
 
       - name: Generate Speculative Topology Diagram (workflow artifact)
         uses: ./.github/actions/generate-diagram
@@ -78,13 +102,17 @@ jobs:
           provider-name: "Azure"
 
   # ----------------------------------------------------------------------------
-  # 2. Automated Apply (Runs on Merge to Main within 'production' Environment)
+  # 2. Apply (Merge to Main, gated by the 'production' Environment)
   # ----------------------------------------------------------------------------
   apply:
     name: "Terraform Apply (Production)"
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.AZURE_SUBSCRIPTION_ID != ''
     runs-on: ubuntu-latest
     environment: production
+    # Never two applies at once; queue instead of cancelling a running apply.
+    concurrency:
+      group: azure-production-apply
+      cancel-in-progress: false
     permissions:
       id-token: write
       contents: read
@@ -105,20 +133,13 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.7.0
+          terraform_version: 1.10.5
 
-      - name: Azure Login via OIDC Workload Identity Federation
-        uses: azure/login@v2
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Initialize Terraform (Remote Backend with Azure AD Auth)
-        run: terraform init
+      - name: Initialize Terraform (Remote Backend, Entra ID data-plane auth)
+        run: terraform init -input=false
 
       - name: Apply Infrastructure Changes
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve -input=false
 
       - name: Generate Topology Diagram (workflow artifact)
         uses: ./.github/actions/generate-diagram
@@ -126,4 +147,3 @@ jobs:
           working-directory: terraform/azure
           output-file: docs/architecture-azure.svg
           provider-name: "Azure"
-
